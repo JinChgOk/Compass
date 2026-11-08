@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compass · A股公司资料</title>
+    <meta name="description" content="输入股票代码或公司名称，查看 A 股公司的 F10 基本资料、日线行情和关联板块资讯。" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='%239e2a2b' stroke-width='4'/%3E%3Cpath d='M32 8 L37 32 L32 27 L27 32 Z' fill='%239e2a2b'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <circle cx="32" cy="32" r="2.5" fill="currentColor"></circle>
+          <path d="M32 7 L37.2 32 L32 27.2 L26.8 32 Z" fill="#9e2a2b"></path>
+          <path d="M32 57 L26.8 32 L32 36.8 L37.2 32 Z" fill="currentColor"></path>
+        </svg>
+        <div>
+          <h1>Compass</h1>
+          <p>输入股票代码或公司名称，查看 F10、日线和关联板块资讯。</p>
+        </div>
+      </header>
+
+      <form id="search-form" role="search">
+        <label class="sr-only" for="q">股票代码或公司名称</label>
+        <input id="q" name="q" maxlength="80" autocomplete="off" spellcheck="false" placeholder="例如 600519 或 贵州茅台" required />
+        <button class="primary" type="submit">查询</button>
+      </form>
+
+      <div class="examples" aria-label="示例">
+        <button type="button" data-query="600519">600519 贵州茅台</button>
+        <button type="button" data-query="宁德时代">宁德时代</button>
+        <button type="button" data-query="平安">平安</button>
+      </div>
+
+      <p id="status" class="status" role="status"></p>
+
+      <section id="result" hidden>
+        <article id="company" class="sheet" hidden>
+          <div class="seal" aria-hidden="true">F10</div>
+          <p id="security-type" class="kicker"></p>
+          <h2 id="company-name"></h2>
+          <p id="company-full" class="full-name"></p>
+          <dl>
+            <div>
+              <dt>代码</dt>
+              <dd id="field-code" class="num"></dd>
+            </div>
+            <div>
+              <dt>简称</dt>
+              <dd id="field-name"></dd>
+            </div>
+            <div class="wide">
+              <dt>全称</dt>
+              <dd id="field-full-name"></dd>
+            </div>
+            <div>
+              <dt>行业</dt>
+              <dd id="field-industry"></dd>
+            </div>
+            <div>
+              <dt>上市日期</dt>
+              <dd id="field-listing-date" class="num"></dd>
+            </div>
+            <div class="wide">
+              <dt>注册地</dt>
+              <dd id="field-address"></dd>
+            </div>
+            <div>
+              <dt>法人</dt>
+              <dd id="field-legal-person"></dd>
+            </div>
+            <div>
+              <dt>公司网站</dt>
+              <dd id="field-website"></dd>
+            </div>
+            <div class="wide">
+              <dt>联系方式</dt>
+              <dd id="field-contact"></dd>
+            </div>
+            <div class="wide">
+              <dt>主营业务</dt>
+              <dd id="field-business"></dd>
+            </div>
+            <div class="wide">
+              <dt>公司简介</dt>
+              <dd id="field-profile" class="profile"></dd>
+            </div>
+          </dl>
+          <p class="footnote">资料来源：东方财富 F10 公司基本资料。仅供查阅。</p>
+        </article>
+
+        <section id="market" class="sheet market" hidden>
+          <h2>行情与板块</h2>
+          <p id="market-status" class="status" role="status"></p>
+          <div id="market-body" hidden>
+            <h3>日线</h3>
+            <p id="kline-error" class="section-error" hidden></p>
+            <div id="quote"></div>
+            <svg id="kline" hidden></svg>
+            <p id="kline-range" class="kline-range" hidden></p>
+            <details id="all-bars">
+              <summary>全部日线</summary>
+              <div id="bars-table"></div>
+            </details>
+            <h3>重要交易日</h3>
+            <ul id="important-days"></ul>
+            <h3>关联板块</h3>
+            <p id="boards-error" class="section-error" hidden></p>
+            <p id="boards-note" class="note" hidden></p>
+            <ul id="boards" class="tags"></ul>
+            <h3>板块资讯</h3>
+            <p id="news-error" class="section-error" hidden></p>
+            <ul id="sector-news" class="news"></ul>
+            <p class="footnote">日线来自 Tushare daily，未复权。关联板块来自 Tushare 概念或同花顺板块成分。资讯来自 Tushare 新闻快讯（财联社、东方财富），按板块名称匹配近 3 日标题。仅供查阅，不构成投资建议。</p>
+          </div>
+        </section>
+
+        <div id="choices" class="sheet choices" hidden>
+          <h2>请选择公司</h2>
+          <ul id="choice-list"></ul>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+    <noscript>请启用 JavaScript 后再查询公司资料。</noscript>
+  </body>
+</html>
