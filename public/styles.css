@@ -266,6 +266,62 @@ input:focus-visible {
   border: 0;
 }
 
+.market { margin-top: 18px; }
+.market h2 { font-size: 28px; }
+.market h3 {
+  margin: 22px 0 8px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+}
+.market .status { color: var(--muted); }
+.section-error,
+.note { margin: 0 0 8px; }
+.section-error { color: var(--seal-deep); }
+.note { color: var(--muted); }
+
+#quote .price {
+  margin: 0;
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+#quote .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0 0;
+}
+#quote .pair { display: inline-block; white-space: nowrap; }
+.up { color: var(--seal); }
+.down { color: #1f6b45; }
+
+#kline { width: 100%; height: 200px; display: block; }
+.kline-range { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+
+#bars-table { overflow-x: auto; }
+.bars { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.bars th { color: var(--muted); font-weight: 550; text-align: left; }
+.bars th,
+.bars td { padding: 4px 10px 4px 0; white-space: nowrap; }
+
+details summary { margin-top: 8px; color: var(--muted); cursor: pointer; }
+
+.sessions,
+.tags,
+.news { margin: 0; padding: 0; list-style: none; }
+.sessions { display: grid; gap: 8px; }
+.sessions li { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tags li { padding: 4px 8px; background: rgba(255, 250, 243, 0.8); border: 1px solid var(--line); }
+.tags small { margin-left: 6px; color: var(--muted); }
+.news { display: grid; gap: 14px; }
+.news time,
+.news .source { color: var(--muted); font-size: 13px; }
+.news h3 { margin: 2px 0; color: var(--ink); font-size: 16px; font-weight: 650; letter-spacing: 0; }
+.news p { margin: 0; }
+
 @media (max-width: 680px) {
   .wrap { padding-top: 32px; }
   .brand h1 { font-size: 28px; }

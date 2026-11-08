@@ -4,6 +4,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { lookupCompany } from "./lib/f10.mjs";
+import { loadDotEnv } from "./lib/env.mjs";
+import { loadMarketSnapshot, readMarketQuery } from "./lib/tushare.mjs";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultPublicDir = path.join(rootDir, "public");
@@ -30,7 +32,11 @@ function sendText(response, statusCode, message) {
   response.end(message);
 }
 
-export function createServer({ lookup = lookupCompany, publicDir = defaultPublicDir } = {}) {
+export function createServer({
+  lookup = lookupCompany,
+  market = loadMarketSnapshot,
+  publicDir = defaultPublicDir,
+} = {}) {
   const root = path.resolve(publicDir);
 
   return http.createServer(async (request, response) => {
@@ -51,6 +57,25 @@ export function createServer({ lookup = lookupCompany, publicDir = defaultPublic
           kind: "error",
           message: "暂时无法获取 F10 资料，请稍后再试",
         });
+      }
+      return;
+    }
+
+    if (url.pathname === "/api/market") {
+      if (request.method !== "GET") {
+        sendText(response, 405, "只支持 GET");
+        return;
+      }
+      const query = readMarketQuery(url.searchParams);
+      if (!query) {
+        sendJson(response, 400, { kind: "invalid", message: "请提供 6 位股票代码" });
+        return;
+      }
+      try {
+        sendJson(response, 200, await market(query));
+      } catch (error) {
+        console.error("market lookup failed", error);
+        sendJson(response, 502, { configured: true, message: "暂时无法获取行情和资讯" });
       }
       return;
     }
@@ -86,9 +111,12 @@ export function createServer({ lookup = lookupCompany, publicDir = defaultPublic
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
+  loadDotEnv(path.join(rootDir, ".env"));
   const port = Number(process.env.PORT) || 3000;
   const server = createServer();
   server.listen(port, "0.0.0.0", () => {
+    const tokenReady = Boolean(process.env.TUSHARE_TOKEN?.trim());
     console.log(`Compass 已启动：http://127.0.0.1:${port}`);
+    console.log(tokenReady ? "Tushare Token 已配置" : "未配置 TUSHARE_TOKEN，日线和板块资讯不会加载");
   });
 }
