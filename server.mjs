@@ -5,7 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { lookupCompany } from "./lib/f10.mjs";
 import { loadDotEnv } from "./lib/env.mjs";
-import { loadMarketSnapshot, readMarketQuery } from "./lib/tushare.mjs";
+import { loadMarketSnapshot, publicMessage, readMarketQuery } from "./lib/tushare.mjs";
+import { loadWatchCard, readWatchQuery } from "./lib/watchlist.mjs";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultPublicDir = path.join(rootDir, "public");
@@ -35,6 +36,7 @@ function sendText(response, statusCode, message) {
 export function createServer({
   lookup = lookupCompany,
   market = loadMarketSnapshot,
+  watch = loadWatchCard,
   publicDir = defaultPublicDir,
 } = {}) {
   const root = path.resolve(publicDir);
@@ -80,6 +82,25 @@ export function createServer({
       return;
     }
 
+    if (url.pathname === "/api/watch") {
+      if (request.method !== "GET") {
+        sendText(response, 405, "只支持 GET");
+        return;
+      }
+      const query = readWatchQuery(url.searchParams);
+      if (!query) {
+        sendJson(response, 400, { kind: "invalid", message: "请提供 6 位股票代码" });
+        return;
+      }
+      try {
+        sendJson(response, 200, await watch(query));
+      } catch (error) {
+        console.error("watch lookup failed", publicMessage(error, process.env.TUSHARE_TOKEN ?? ""));
+        sendJson(response, 502, { configured: true, message: "暂时无法获取自选资料" });
+      }
+      return;
+    }
+
     if (request.method !== "GET" && request.method !== "HEAD") {
       sendText(response, 405, "只支持 GET");
       return;
@@ -117,6 +138,6 @@ if (isMain) {
   server.listen(port, "0.0.0.0", () => {
     const tokenReady = Boolean(process.env.TUSHARE_TOKEN?.trim());
     console.log(`Compass 已启动：http://127.0.0.1:${port}`);
-    console.log(tokenReady ? "Tushare Token 已配置" : "未配置 TUSHARE_TOKEN，日线和板块资讯不会加载");
+    console.log(tokenReady ? "Tushare Token 已配置" : "未配置 TUSHARE_TOKEN，日线、板块资讯和自选不会加载");
   });
 }
