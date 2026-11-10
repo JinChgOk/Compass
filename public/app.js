@@ -786,7 +786,16 @@ function createCard(entry) {
     blocks.append(block);
   }
 
-  article.append(head, status, blocks);
+  const midterm = document.createElement("section");
+  midterm.className = "block midterm";
+  midterm.dataset.block = "midterm";
+  const midtermTitle = document.createElement("h3");
+  midtermTitle.textContent = "中长线";
+  const midtermBody = document.createElement("div");
+  midtermBody.className = "block-body";
+  midterm.append(midtermTitle, midtermBody);
+
+  article.append(head, status, blocks, midterm);
   return article;
 }
 
@@ -815,6 +824,7 @@ async function refreshCard(entry) {
       return;
     }
     renderCard(current, data);
+    if (data.configured !== false) await loadMidterm(entry, current);
   } catch {
     if (watchRequests.get(entry.code) !== requestId) return;
     const current = document.querySelector(selector);
@@ -829,6 +839,8 @@ function showCardMessage(card, message) {
   status.textContent = message;
   const blocks = card.querySelector(".blocks");
   if (blocks) blocks.hidden = true;
+  const midterm = card.querySelector(".midterm");
+  if (midterm) midterm.hidden = true;
 }
 
 function renderCard(card, data) {
@@ -855,6 +867,54 @@ function renderCard(card, data) {
   fillCapital(card.querySelector('[data-block="capital"] .block-body'), data.capital || {});
   fillHolders(card.querySelector('[data-block="holders"] .block-body'), data.holders || {});
   fillPosition(card.querySelector('[data-block="position"] .block-body'), data.position || {});
+  const midterm = card.querySelector(".midterm");
+  if (midterm) midterm.hidden = false;
+}
+
+async function loadMidterm(entry, card) {
+  const body = card.querySelector("[data-block='midterm'] .block-body");
+  if (!body) return;
+  body.textContent = "正在看三年位置、估值和龙虎榜…";
+  const params = new URLSearchParams({
+    code: entry.code,
+    name: entry.name || "",
+    securityType: entry.securityType || "",
+  });
+  try {
+    const response = await fetch(`/api/analysis?${params}`);
+    const data = await response.json();
+    if (!card.isConnected) return;
+    fillAnalysis(body, response.ok ? data : { configured: true, error: data.message || "暂时无法生成中长线分析" });
+  } catch {
+    if (!card.isConnected) return;
+    body.textContent = "中长线暂时取不到";
+  }
+}
+
+function fillAnalysis(body, data) {
+  body.replaceChildren();
+  if (data.configured === false) {
+    appendSub(body, data.message || "需要配置 TUSHARE_TOKEN");
+    return;
+  }
+  if (data.error) appendError(body, data.error);
+  for (const [label, text] of [
+    ["底部", data.bottom],
+    ["后续", data.stance],
+    ["性价比", data.value],
+    ["位置", data.levels],
+    ["失效", data.invalidation],
+    ["资金", data.capital],
+    ["反证", data.counter],
+  ]) {
+    if (!text) continue;
+    const row = document.createElement("p");
+    row.className = "stack";
+    const name = document.createElement("b");
+    name.textContent = label;
+    row.append(name, document.createTextNode(text));
+    body.append(row);
+  }
 }
 
 function rememberName(code, reported) {

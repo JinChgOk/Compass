@@ -367,6 +367,15 @@ button.ghost:disabled {
 
 .metric span:last-child { font-variant-numeric: tabular-nums; }
 
+.midterm { margin-top: 12px; }
+.midterm .stack { display: block; margin: 0 0 8px; line-height: 1.6; }
+.midterm .stack b {
+  display: inline-block;
+  min-width: 4.5em;
+  color: var(--muted);
+  font-weight: 550;
+}
+
 .market { margin-top: 18px; }
 .market h2 { font-size: 28px; }
 .market h3 {
