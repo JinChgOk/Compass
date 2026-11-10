@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { GET } from "../lib/handle.mjs";
 import { createServer } from "../server.mjs";
 import { shiftYmd } from "../lib/tushare.mjs";
 import {
@@ -473,6 +474,15 @@ test("serves the watch API and the card labels", async () => {
   } finally {
     server.close();
   }
+});
+
+test("web handler serves the home page without listening", async () => {
+  const response = await GET(new Request("http://127.0.0.1/"));
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /text\/html/);
+  assert.match(await response.text(), /自选/);
+  const missing = await GET(new Request("http://127.0.0.1/api/watch"));
+  assert.equal(missing.status, 400);
 });
 
 test("watchlist source stays on the allowed interfaces", async () => {

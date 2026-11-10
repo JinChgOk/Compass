@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
+  "main": "index.mjs",
   "description": "查询 A 股公司资料，并查看自选股的近期变化",
   "scripts": {
     "start": "node server.mjs",
