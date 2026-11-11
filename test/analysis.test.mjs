@@ -180,7 +180,7 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
   assert.match(result.value, /市值|市盈率|市净率/);
   assert.equal(calls.includes("weekly"), true);
   assert.equal(calls.includes("daily_basic"), true);
-  assert.equal(calls.includes("top_list"), true);
+  assert.equal(calls.filter((name) => name === "top_list").length, 7);
   assert.equal(calls.some((name) => BANNED.includes(name)), false);
   assert.equal(JSON.stringify(result).includes("test-token"), false);
 });

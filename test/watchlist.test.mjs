@@ -250,8 +250,8 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
       return table(
         ["ts_code", "trade_date", "price", "vol", "amount"],
         [
-          ["000001.SZ", "20261028", 1, 1, 999],
-          ["600519.SH", "20261028", 10, 1.5, 12.34],
+          ["000001.SZ", "20261031", 1, 1, 999],
+          ["600519.SH", "20261031", 10, 1.5, 12.34],
           ["600519.SH", "20261001", 10, 9, 100],
         ],
       );
@@ -301,7 +301,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.capital.dragonTiger.netYuan, 2_500_000);
   assert.deepEqual(result.capital.dragonTiger.reasons, ["日换手率达到20%的前五只证券"]);
   assert.equal(result.capital.blockTrade.amountWan, 12.34);
-  assert.equal(result.capital.blockTrade.tradeDate, "2026-10-28");
+  assert.equal(result.capital.blockTrade.tradeDate, "2026-10-31");
   assert.equal(result.capital.blockTrade.count, 1);
   assert.equal(result.holders.change, -3000);
   assert.equal(result.holders.changePct, -20);
@@ -335,7 +335,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     "top_list",
   ]);
   assert.equal(calls.some((call) => BANNED.includes(call.api_name)), false);
-  assert.equal(calls.filter((call) => call.api_name === "top_list").length, 10);
+  assert.equal(calls.filter((call) => call.api_name === "top_list").length, 7);
   assert.equal(calls.find((call) => call.api_name === "index_daily").params.ts_code, "801125.SI");
   assert.equal(calls.find((call) => call.api_name === "index_member_all").params.is_new, "Y");
   assert.equal(calls.find((call) => call.api_name === "daily").params.end_date, end);
@@ -464,7 +464,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /id="watch-form"/);
     assert.match(html, /加入自选/);
     assert.match(html, /近 5 个交易日/);
-    assert.match(html, /近 10 个交易日/);
+    assert.match(html, /近 7 个交易日/);
     assert.match(html, /近 20 个交易日/);
     const script = await (await fetch(`http://127.0.0.1:${port}/app.js`)).text();
     assert.match(script, /"业绩"/);
