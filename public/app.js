@@ -901,6 +901,7 @@ function fillAnalysis(body, data) {
   for (const [label, text] of [
     ["底部", data.bottom],
     ["后续", data.stance],
+    ["便宜", data.cheap],
     ["性价比", data.value],
     ["位置", data.levels],
     ["失效", data.invalidation],

@@ -8,12 +8,65 @@ import {
   buildLevels,
   buildUnlock,
   buildValuation,
+  judgeCheapness,
   loadAnalysis,
 } from "../lib/analysis.mjs";
 import { createServer } from "../server.mjs";
 import { shiftYmd } from "../lib/tushare.mjs";
 
 const BANNED = ["fund_portfolio", "stk_surv", "limit_list_d", "ths_member", "dc_member", "cyq_perf", "cyq_chips"];
+
+test("says a low PE is truly cheap only when profit and revenue agree", () => {
+  const real = judgeCheapness({
+    valuation: { peTtm: 9.8, pb: 1.5, pePercentile: 1, pbPercentile: 30, dvTtm: 2.8, totalMv: 29330000 },
+    relative: { industryPe: 15.4 },
+    earnings: { profitYoy: 20, previousProfitYoy: 18, revenueYoy: 15 },
+    price: { rebound: 12 },
+    forward: { pe: 10.5 },
+    valueStyle: "pe",
+  });
+  assert.equal(real.verdict, "真便宜");
+  assert.match(real.reasons.join(""), /两者同向/);
+
+  const oneOff = judgeCheapness({
+    valuation: { peTtm: 9.8, pePercentile: 1, pbPercentile: 40, totalMv: 100000 },
+    relative: { industryPe: 15 },
+    earnings: { profitYoy: 40, previousProfitYoy: 30, revenueYoy: -5 },
+    price: { rebound: 10 },
+    valueStyle: "pe",
+  });
+  assert.equal(oneOff.verdict, "看起来便宜");
+  assert.match(oneOff.reasons.join(""), /不同向/);
+
+  const thinRevenue = judgeCheapness({
+    valuation: { peTtm: 9.8, pePercentile: 1 },
+    relative: { industryPe: 15 },
+    earnings: { profitYoy: 20, previousProfitYoy: 18, revenueYoy: 3 },
+    price: { rebound: 10 },
+    valueStyle: "pe",
+  });
+  assert.equal(thinRevenue.verdict, "看起来便宜");
+  assert.match(thinRevenue.reasons.join(""), /收入没有跟上利润/);
+
+  const slowing = judgeCheapness({
+    valuation: { peTtm: 9.8, pePercentile: 1, totalMv: 100000 },
+    relative: {},
+    earnings: { profitYoy: 20, previousProfitYoy: 80, revenueYoy: 18 },
+    price: { rebound: 188 },
+    valueStyle: "pe",
+  });
+  assert.equal(slowing.verdict, "看起来便宜");
+  assert.match(slowing.reasons.join(""), /增速在放缓/);
+  assert.match(slowing.reasons.join(""), /利润变厚/);
+
+  const dear = judgeCheapness({
+    valuation: { peTtm: 30, pePercentile: 70 },
+    relative: { industryPe: 15 },
+    earnings: { profitYoy: 10, previousProfitYoy: 8, revenueYoy: 9 },
+    valueStyle: "pe",
+  });
+  assert.equal(dear.verdict, "不便宜");
+});
 
 test("reads weekly support, resistance, and the level that ends the bottom view", () => {
   const bars = Array.from({ length: 40 }, (_, index) => ({
