@@ -790,7 +790,7 @@ function createCard(entry) {
   midterm.className = "block midterm";
   midterm.dataset.block = "midterm";
   const midtermTitle = document.createElement("h3");
-  midtermTitle.textContent = "中长线";
+  midtermTitle.textContent = "中线";
   const midtermBody = document.createElement("div");
   midtermBody.className = "block-body";
   midterm.append(midtermTitle, midtermBody);
@@ -874,7 +874,7 @@ function renderCard(card, data) {
 async function loadMidterm(entry, card) {
   const body = card.querySelector("[data-block='midterm'] .block-body");
   if (!body) return;
-  body.textContent = "正在看三年位置、估值和龙虎榜…";
+  body.textContent = "正在看近一年的位置、估值和龙虎榜…";
   const params = new URLSearchParams({
     code: entry.code,
     name: entry.name || "",
@@ -884,10 +884,10 @@ async function loadMidterm(entry, card) {
     const response = await fetch(`/api/analysis?${params}`);
     const data = await response.json();
     if (!card.isConnected) return;
-    fillAnalysis(body, response.ok ? data : { configured: true, error: data.message || "暂时无法生成中长线分析" });
+    fillAnalysis(body, response.ok ? data : { configured: true, error: data.message || "暂时无法生成中线分析" });
   } catch {
     if (!card.isConnected) return;
-    body.textContent = "中长线暂时取不到";
+    body.textContent = "中线暂时取不到";
   }
 }
 

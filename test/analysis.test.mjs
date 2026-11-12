@@ -99,7 +99,31 @@ test("reads weekly support, resistance, and the level that ends the bottom view"
   assert.equal(levels.reclaimed, false);
 });
 
-test("places the current PE in its own three-year range", () => {
+test("keeps the year's swings and ignores older weekly bars", () => {
+  const bars = Array.from({ length: 70 }, (_, index) => ({
+    trade_date: shiftYmd("20240101", index * 7),
+    open: 12,
+    high: 12.2,
+    low: 11.8,
+    close: 12,
+  }));
+  bars[2].high = 40;
+  bars[2].low = 30;
+  bars[2].close = 35;
+  bars[60].low = 9;
+  bars[60].high = 9.4;
+  bars[60].close = 9.2;
+  bars[69].close = 11;
+  bars[69].high = 11.2;
+  bars[69].low = 10.6;
+  const levels = buildLevels(bars, 11);
+  assert.ok(levels.support);
+  assert.ok(levels.support.low < 12);
+  assert.ok(levels.resistance == null || levels.resistance.high < 20);
+  assert.ok(levels.ma != null);
+});
+
+test("places the current PE in the supplied one-year range", () => {
   const rows = Array.from({ length: 30 }, (_, index) => ({
     trade_date: shiftYmd("20250101", index),
     pe_ttm: 10 + index,
@@ -143,7 +167,7 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
   const result = assembleMidterm({
     price: { close: 10.8, drawdown: -40, rebound: 8, ma60: 14 },
     valuation: { peTtm: 12, pb: 1.4, dvTtm: 1, totalMv: 200000, pePercentile: 15, pbPercentile: 18 },
-    levels: { support: { low: 10, high: 10.4, touches: 2, fromLow: true, fromHigh: false }, resistance: { low: 15, high: 16, touches: 1, fromLow: false, fromHigh: true }, ma60: 14, reclaimed: false, room: 30, nearerMa: false, invalidation: 10 },
+    levels: { support: { low: 10, high: 10.4, touches: 2, fromLow: true, fromHigh: false }, resistance: { low: 15, high: 16, touches: 1, fromLow: false, fromHigh: true }, ma: 14, reclaimed: false, room: 30, nearerMa: false, invalidation: 10 },
     relative: { name: "白酒", excess: -12, industryPe: 25, industryPb: 3 },
     earnings: { positive: false, negative: true, summary: "最新预告续亏", growth: null },
     capital: { flow20: 100, flow60: -500, margin: "回升", holders: "股东户数下降" },
