@@ -999,19 +999,57 @@ function fillCapital(body, capital) {
 function fillHolders(body, holders) {
   body.replaceChildren();
   if (holders.error) appendError(body, holders.error);
-  if (!holders.latest) {
-    if (!holders.error) appendSub(body, holders.hint || "没有查到股东户数。");
+  if (holders.latest) {
+    appendPair(body, "股东户数", formatCount(holders.latest.count), "");
+    if (holders.change != null) appendPair(body, "较上一期", holderChange(holders), "");
+    const meta = [
+      holders.latest.endDate ? `截至 ${holders.latest.endDate}` : "",
+      holders.latest.annDate ? `公告 ${holders.latest.annDate}` : "",
+      holders.previous?.endDate ? `上一期 ${holders.previous.endDate}` : "",
+    ].filter(Boolean).join(" · ");
+    if (meta) appendSub(body, meta);
+  } else if (!holders.error) {
+    appendSub(body, holders.hint || "没有查到股东户数。");
+  }
+  if (holders.hint && holders.latest) appendSub(body, holders.hint);
+  fillFunds(body, holders.funds || {});
+  fillSurveys(body, holders.surveys || {});
+}
+
+function fillFunds(body, funds) {
+  if (funds.error) appendError(body, funds.error);
+  if (!funds.latest) {
+    if (!funds.error && funds.hint) appendSub(body, funds.hint);
     return;
   }
-  appendPair(body, "股东户数", formatCount(holders.latest.count), "");
-  if (holders.change != null) appendPair(body, "较上一期", holderChange(holders), "");
+  const change = funds.countChange == null
+    ? ""
+    : funds.countChange === 0
+      ? "只数与上期持平"
+      : `较上期${funds.countChange > 0 ? "多" : "少"} ${Math.abs(funds.countChange).toLocaleString("zh-CN")} 只`;
+  appendPair(body, "公募持仓", `${funds.latest.count} 只`, "");
+  if (funds.latest.floatPct != null) appendPair(body, "占流通", `${funds.latest.floatPct.toFixed(2)}%`, "");
+  if (change) appendPair(body, "持仓变化", change, "");
   const meta = [
-    holders.latest.endDate ? `截至 ${holders.latest.endDate}` : "",
-    holders.latest.annDate ? `公告 ${holders.latest.annDate}` : "",
-    holders.previous?.endDate ? `上一期 ${holders.previous.endDate}` : "",
+    funds.latest.periodLabel || funds.latest.endDate || "",
+    funds.previous?.periodLabel ? `上一期 ${funds.previous.periodLabel}` : "",
   ].filter(Boolean).join(" · ");
   if (meta) appendSub(body, meta);
-  if (holders.hint) appendSub(body, holders.hint);
+  if (funds.hint) appendSub(body, funds.hint);
+}
+
+function fillSurveys(body, surveys) {
+  if (surveys.error) appendError(body, surveys.error);
+  if (!surveys.count) {
+    if (!surveys.error && surveys.hint) appendSub(body, surveys.hint);
+    return;
+  }
+  appendPair(body, "机构调研", `近1年 ${surveys.count} 次`, "");
+  const meta = [
+    surveys.latestDate ? `最近 ${surveys.latestDate}` : "",
+    surveys.orgCount ? `${surveys.orgCount} 家机构` : "",
+  ].filter(Boolean).join(" · ");
+  if (meta) appendSub(body, meta);
 }
 
 function fillPosition(body, position) {

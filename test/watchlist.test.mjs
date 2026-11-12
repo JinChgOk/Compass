@@ -7,15 +7,17 @@ import { createServer } from "../server.mjs";
 import { shiftYmd } from "../lib/tushare.mjs";
 import {
   buildCapital,
+  buildFunds,
   buildHolders,
   buildPerformance,
   buildPosition,
+  buildSurveys,
   industryChoices,
   loadWatchCard,
   readWatchQuery,
 } from "../lib/watchlist.mjs";
 
-const BANNED = ["fund_portfolio", "stk_surv", "limit_list_d", "ths_member", "dc_member", "cyq_perf", "cyq_chips"];
+const BANNED = ["limit_list_d", "dc_member", "cyq_perf", "cyq_chips"];
 
 test("prefers an express over the same period and a newer forecast for profit", () => {
   const samePeriod = buildPerformance({
@@ -111,6 +113,30 @@ test("sums main-force flow, margin balance, dragon-tiger and block trades", () =
   assert.equal(capital.blockTrade.amountWan, 150.5);
   assert.equal(capital.blockTrade.volWan, 3);
   assert.equal(buildCapital({ margins: [{ trade_date: "20261106", rzye: 10 }] }).margin.changeYuan, null);
+});
+
+test("counts public funds and surveys across two periods", () => {
+  const funds = buildFunds([
+    { ts_code: "001001.OF", end_date: "20250930", ann_date: "20251025", symbol: "600519.SH", stk_float_ratio: 1.2 },
+    { ts_code: "001002.OF", end_date: "20250930", ann_date: "20251026", symbol: "600519.SH", stk_float_ratio: 0.8 },
+    { ts_code: "001001.OF", end_date: "20250630", ann_date: "20250720", symbol: "600519.SH", stk_float_ratio: 2 },
+    { ts_code: "001002.OF", end_date: "20250630", ann_date: "20250721", symbol: "600519.SH", stk_float_ratio: 1 },
+    { ts_code: "001003.OF", end_date: "20250630", ann_date: "20250721", symbol: "600519.SH", stk_float_ratio: 0.5 },
+  ]);
+  assert.equal(funds.latest.count, 2);
+  assert.equal(funds.latest.periodLabel, "2025三季报");
+  assert.equal(funds.latest.floatPct, 2);
+  assert.equal(funds.previous.count, 3);
+  assert.equal(funds.countChange, -1);
+  const surveys = buildSurveys([
+    { surv_date: "20260301", rece_org: "易方达" },
+    { surv_date: "20260301", rece_org: "华夏" },
+    { surv_date: "20251008", rece_org: "易方达" },
+    { surv_date: "20240101", rece_org: "过期" },
+  ], { start: "20241107", end: "20261106" });
+  assert.equal(surveys.count, 2);
+  assert.equal(surveys.orgCount, 2);
+  assert.equal(surveys.latestDate, "2026-03-01");
 });
 
 test("compares holder count with the previous period", () => {
@@ -266,6 +292,28 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
         ],
       );
     }
+    if (body.api_name === "fund_portfolio") {
+      assert.equal(body.params.symbol, "600519.SH");
+      return table(
+        ["ts_code", "ann_date", "end_date", "symbol", "stk_float_ratio"],
+        [
+          ["001001.OF", "20251025", "20250930", "600519.SH", 1.5],
+          ["001002.OF", "20251026", "20250930", "600519.SH", 0.5],
+          ["001001.OF", "20250720", "20250630", "600519.SH", 2],
+        ],
+      );
+    }
+    if (body.api_name === "stk_surv") {
+      assert.equal(body.params.ts_code, "600519.SH");
+      assert.equal(JSON.stringify(body).includes("content"), false);
+      return table(
+        ["ts_code", "surv_date", "rece_org"],
+        [
+          ["600519.SH", "20260301", "易方达"],
+          ["600519.SH", "20251120", "华夏"],
+        ],
+      );
+    }
     throw new Error(`unexpected ${body.api_name}`);
   };
 
@@ -306,6 +354,11 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.holders.change, -3000);
   assert.equal(result.holders.changePct, -20);
   assert.equal(result.holders.previous.count, 15000);
+  assert.equal(result.holders.funds.latest.count, 2);
+  assert.equal(result.holders.funds.latest.floatPct, 2);
+  assert.equal(result.holders.funds.countChange, 1);
+  assert.equal(result.holders.surveys.count, 2);
+  assert.equal(result.holders.surveys.latestDate, "2026-03-01");
   const stockBase = 100 + 4;
   const stockEnd = 100 + 24;
   const indexBase = 200 + 4;
@@ -327,11 +380,13 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     "express",
     "fina_indicator",
     "forecast",
+    "fund_portfolio",
     "index_daily",
     "index_member_all",
     "margin_detail",
     "moneyflow",
     "stk_holdernumber",
+    "stk_surv",
     "top_list",
   ]);
   assert.equal(calls.some((call) => BANNED.includes(call.api_name)), false);
@@ -471,6 +526,8 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /"资金"/);
     assert.match(script, /"股东"/);
     assert.match(script, /"位置"/);
+    assert.match(script, /公募持仓/);
+    assert.match(script, /机构调研/);
   } finally {
     server.close();
   }

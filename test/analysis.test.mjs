@@ -14,7 +14,7 @@ import {
 import { createServer } from "../server.mjs";
 import { shiftYmd } from "../lib/tushare.mjs";
 
-const BANNED = ["fund_portfolio", "stk_surv", "limit_list_d", "ths_member", "dc_member", "cyq_perf", "cyq_chips"];
+const BANNED = ["limit_list_d", "dc_member", "cyq_perf", "cyq_chips"];
 
 test("says a low PE is truly cheap only when profit and revenue agree", () => {
   const real = judgeCheapness({
@@ -170,7 +170,14 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
     levels: { support: { low: 10, high: 10.4, touches: 2, fromLow: true, fromHigh: false }, resistance: { low: 15, high: 16, touches: 1, fromLow: false, fromHigh: true }, ma: 14, reclaimed: false, room: 30, nearerMa: false, invalidation: 10 },
     relative: { name: "白酒", excess: -12, industryPe: 25, industryPb: 3 },
     earnings: { positive: false, negative: true, summary: "最新预告续亏", growth: null },
-    capital: { flow20: 100, flow60: -500, margin: "回升", holders: "股东户数下降" },
+    capital: {
+      flow20: 100,
+      flow60: -500,
+      margin: "回升",
+      holders: "股东户数下降",
+      funds: { latest: { periodLabel: "2025三季报", count: 2, floatPct: 2 }, previous: { count: 3 }, countChange: -1 },
+      surveys: { count: 2, latestDate: "2026-03-01", orgCount: 2 },
+    },
     dragon: { count: 2, net: 800000, reasons: ["日跌幅偏离值达到7%的前五只证券"], sessions: 60 },
     seats: { institution: 500000, hot: null },
     unlock: { ratio: 6, count: 2 },
@@ -186,6 +193,8 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
   assert.match(result.invalidation, /10.00/);
   assert.match(result.capital, /龙虎榜 2 次/);
   assert.match(result.capital, /机构席位/);
+  assert.match(result.capital, /2025三季报公募 2 只持仓/);
+  assert.match(result.capital, /近1年机构调研 2 次/);
   assert.match(result.counter, /解禁合计 6.0%/);
   assert.match(result.value, /总市值 20.0 亿/);
 });
@@ -234,6 +243,18 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
     }
     if (body.api_name === "share_float") {
       return table(["float_date", "float_ratio"], [["20261220", 1.2]]);
+    }
+    if (body.api_name === "fund_portfolio") {
+      return table(
+        ["ts_code", "ann_date", "end_date", "symbol", "stk_float_ratio"],
+        [
+          ["001001.OF", "20251025", "20250930", "600519.SH", 1.5],
+          ["001002.OF", "20250720", "20250630", "600519.SH", 2],
+        ],
+      );
+    }
+    if (body.api_name === "stk_surv") {
+      return table(["ts_code", "surv_date", "rece_org"], [["600519.SH", "20260301", "易方达"]]);
     }
     return table(["ts_code"], []);
   };
