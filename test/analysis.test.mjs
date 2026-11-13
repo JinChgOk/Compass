@@ -144,7 +144,7 @@ test("sums medium-term flow and dragon-tiger appearances", () => {
     { trade_date: "20261101", buy_lg_amount: 100, sell_lg_amount: 40, buy_elg_amount: 0, sell_elg_amount: 0 },
     { trade_date: "20261106", buy_lg_amount: 10, sell_lg_amount: 30, buy_elg_amount: 0, sell_elg_amount: 0 },
   ], [
-    { trade_date: "20261001", rzye: 100 },
+    { trade_date: "20251106", rzye: 100 },
     { trade_date: "20261106", rzye: 140 },
   ]);
   assert.equal(capital.flow20, 40);
@@ -212,6 +212,7 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
   assert.match(result.levels, /支撑 10.00/);
   assert.match(result.levels, /压力 15.00/);
   assert.match(result.invalidation, /10.00/);
+  assert.match(result.capital, /近1年融资余额回升/);
   assert.match(result.capital, /龙虎榜 2 次/);
   assert.match(result.capital, /机构席位/);
   assert.match(result.capital, /2025三季报公募 2 只持仓/);

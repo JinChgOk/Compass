@@ -1153,9 +1153,9 @@ function fillCapital(body, capital) {
   else if (!margin) appendSub(body, "没有查到融资余额。");
   else if (margin.changeYuan == null) {
     appendPair(body, "融资余额", formatYuan(margin.latestYuan), "");
-    appendSub(body, margin.latestDate ? `${margin.latestDate} · 还没有更早的余额可比较` : "还没有更早的余额可比较");
+    appendSub(body, margin.latestDate ? `${margin.latestDate} · 还没有一年前的余额可比较` : "还没有一年前的余额可比较");
   } else {
-    appendPair(body, "融资余额变化", formatYuan(margin.changeYuan, true), pctClass(margin.changeYuan));
+    appendPair(body, "近1年融资余额变化", formatYuan(margin.changeYuan, true), pctClass(margin.changeYuan));
     appendSub(body, `${margin.latestDate} 余额 ${formatYuan(margin.latestYuan)}，较 ${margin.previousDate}`);
   }
 

@@ -85,10 +85,11 @@ test("sums main-force flow, margin balance, dragon-tiger and block trades", () =
       { trade_date: "20261105", buy_lg_amount: 65 },
       { trade_date: "20261106", buy_lg_amount: 65 },
     ],
-    margins: [1, 2, 3, 4, 5, 6].map((step, index) => ({
-      trade_date: `2026110${index + 1}`,
-      rzye: step * 1e8,
-    })),
+    margins: [
+      { trade_date: "20251106", rzye: 100_000_000 },
+      { trade_date: "20260506", rzye: 300_000_000 },
+      { trade_date: "20261106", rzye: 600_000_000 },
+    ],
     topList: [
       { trade_date: "20261101", reason: "更早", net_amount: 1 },
       { trade_date: "20261106", reason: "日涨幅偏离值达到7%的前五只证券", net_amount: 1_000_000, pct_change: 10 },
@@ -105,7 +106,7 @@ test("sums main-force flow, margin balance, dragon-tiger and block trades", () =
   assert.equal(capital.mainForce.start, "2026-11-02");
   assert.equal(capital.margin.latestYuan, 600_000_000);
   assert.equal(capital.margin.changeYuan, 500_000_000);
-  assert.equal(capital.margin.previousDate, "2026-11-01");
+  assert.equal(capital.margin.previousDate, "2025-11-06");
   assert.deepEqual(capital.dragonTiger.reasons, [
     "日涨幅偏离值达到7%的前五只证券",
     "连续三个交易日内，涨幅偏离值累计达到20%的证券",
@@ -276,7 +277,10 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     if (body.api_name === "margin_detail") {
       return table(
         ["ts_code", "trade_date", "rzye"],
-        dates.slice(-6).map((tradeDate, index) => ["600519.SH", tradeDate, (index + 1) * 1e8]),
+        [
+          ["600519.SH", "20251106", 100_000_000],
+          ["600519.SH", end, 600_000_000],
+        ],
       );
     }
     if (body.api_name === "stk_holdernumber") {
@@ -389,7 +393,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.capital.mainForce.start, "2026-11-02");
   assert.equal(result.capital.margin.changeYuan, 500_000_000);
   assert.equal(result.capital.margin.latestYuan, 600_000_000);
-  assert.equal(result.capital.margin.previousDate, "2026-11-01");
+  assert.equal(result.capital.margin.previousDate, "2025-11-06");
   assert.equal(result.capital.dragonTiger.netYuan, 2_500_000);
   assert.deepEqual(result.capital.dragonTiger.reasons, ["日换手率达到20%的前五只证券"]);
   assert.equal(result.capital.blockTrade.amountWan, 12.34);
@@ -444,6 +448,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(calls.find((call) => call.api_name === "index_daily").params.ts_code, "801125.SI");
   assert.equal(calls.find((call) => call.api_name === "index_member_all").params.is_new, "Y");
   assert.equal(calls.find((call) => call.api_name === "daily").params.end_date, end);
+  assert.equal(calls.find((call) => call.api_name === "margin_detail").params.start_date, shiftYmd(end, -370));
   assert.equal(JSON.stringify(result).includes("test-token"), false);
 });
 
@@ -572,6 +577,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /加入自选/);
     assert.match(html, /type="module"/);
     assert.match(html, /近 5 个交易日/);
+    assert.match(html, /融资余额对比近 1 年/);
     assert.match(html, /近 7 个交易日/);
     assert.match(html, /近 20 个交易日/);
     assert.match(html, /市值前 6/);
@@ -581,6 +587,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /"资金"/);
     assert.match(script, /"股东"/);
     assert.match(script, /"位置"/);
+    assert.match(script, /近1年融资余额变化/);
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
     assert.match(script, /surveys\.records/);
