@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Compass · A股公司资料</title>
-    <meta name="description" content="输入股票代码或公司名称，查看 A 股公司的 F10 基本资料、日线行情和关联板块资讯。" />
+    <title>Compass · A股自选</title>
+    <meta name="description" content="查看 A 股自选的近期业绩、资金、股东人数和相对申万行业的涨跌，也可以查询单家公司的 F10。" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='none' stroke='%239e2a2b' stroke-width='4'/%3E%3Cpath d='M32 8 L37 32 L32 27 L27 32 Z' fill='%239e2a2b'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -19,10 +19,39 @@
         </svg>
         <div>
           <h1>Compass</h1>
-          <p>输入股票代码或公司名称，查看 F10、日线和关联板块资讯。</p>
+          <p>自选股的近期变化。也可以查询单家公司的 F10、日线和板块资讯。</p>
         </div>
       </header>
 
+      <section id="watchlist" class="watchlist">
+        <h2 class="section-title">自选</h2>
+        <form id="watch-form">
+          <label class="sr-only" for="watch-q">加入自选的股票代码或公司名称</label>
+          <input id="watch-q" name="q" maxlength="80" autocomplete="off" spellcheck="false" placeholder="例如 600519 或 贵州茅台" required />
+          <label class="sr-only" for="watch-group">加入到分组</label>
+          <select id="watch-group"></select>
+          <button class="primary" type="submit">加入</button>
+        </form>
+        <form id="group-form" class="group-form">
+          <label class="sr-only" for="group-name">新分组名称</label>
+          <input id="group-name" name="name" maxlength="12" autocomplete="off" spellcheck="false" placeholder="新分组名称" />
+          <button class="ghost" type="submit">新建分组</button>
+        </form>
+        <p id="watch-status" class="status" role="status"></p>
+        <div id="watch-choices" class="choices" hidden>
+          <ul id="watch-choice-list"></ul>
+        </div>
+        <div id="watch-roster" hidden></div>
+        <p id="watch-empty" class="note">自选还是空的。输入代码或公司名称加入，勾选后点「分析所选」。</p>
+        <div id="watch-toolbar" hidden>
+          <p id="watch-pick-count" class="note"></p>
+          <button id="watch-analyze" class="primary" type="button">分析所选</button>
+        </div>
+        <div id="watch-cards"></div>
+        <p class="footnote">业绩来自 Tushare 业绩预告和业绩快报，预告列出近 3 年各期，缺的同比用财务指标补。资金里，主力净流入是近 5 个交易日的大单与特大单净额，融资余额对比近 1 年，龙虎榜和大宗看近 7 个交易日。股东户数对比上一期，并看最近两期公募持仓和近一年机构调研。公募默认列出市值前 6 只的名称和占比，其余可展开。机构调研默认列出最近 6 次的机构和要点，其余可展开。位置是近 20 个交易日涨跌幅相对申万行业指数，行情未复权。中线只看最近一年：周线高低点、20 周均线、估值在这一年里的分位，以及近 1 年相对行业的涨跌。资金仍看近 20/60 日，龙虎榜看近 7 个交易日。反证看近一年涨停、炸板和连板。列表只保存在这台浏览器，可分组后勾选再分析。仅供查阅，不构成投资建议。</p>
+      </section>
+
+      <h2 class="section-title">查询公司</h2>
       <form id="search-form" role="search">
         <label class="sr-only" for="q">股票代码或公司名称</label>
         <input id="q" name="q" maxlength="80" autocomplete="off" spellcheck="false" placeholder="例如 600519 或 贵州茅台" required />
@@ -43,6 +72,7 @@
           <p id="security-type" class="kicker"></p>
           <h2 id="company-name"></h2>
           <p id="company-full" class="full-name"></p>
+          <button id="add-watch" class="ghost" type="button" hidden>加入自选</button>
           <dl>
             <div>
               <dt>代码</dt>
@@ -123,8 +153,9 @@
           <ul id="choice-list"></ul>
         </div>
       </section>
+      <p id="call-meter" class="call-meter" hidden></p>
     </main>
-    <script src="/app.js"></script>
+    <script type="module" src="/app.js"></script>
     <noscript>请启用 JavaScript 后再查询公司资料。</noscript>
   </body>
 </html>

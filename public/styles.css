@@ -77,6 +77,13 @@ input {
   outline: none;
 }
 
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+
 button.primary {
   min-width: 96px;
   border: 0;
@@ -218,6 +225,13 @@ a { color: var(--seal-deep); }
   font-size: 12px;
 }
 
+.call-meter {
+  margin: 36px 0 0;
+  color: #c4b8a4;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
 .choices h2 { font-size: 24px; padding-right: 0; }
 
 .choices ul {
@@ -264,6 +278,256 @@ input:focus-visible {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+.section-title {
+  margin: 32px 0 0;
+  font-size: 22px;
+  font-weight: 680;
+  letter-spacing: 0.12em;
+}
+
+.watchlist form,
+#search-form { margin-top: 12px; }
+
+#watch-form {
+  grid-template-columns: 1fr minmax(7em, auto) auto;
+}
+
+.group-form {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  grid-template-columns: 1fr auto;
+}
+
+.group-form input { padding: 8px 10px; }
+
+select {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 8px 6px;
+}
+
+#watch-empty { margin: 14px 0 0; }
+
+#watch-roster { margin-top: 16px; display: grid; gap: 14px; }
+
+.roster-group {
+  padding: 10px 12px 6px;
+  background: #fffaf3;
+  border: 1px solid var(--line);
+}
+
+.roster-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.roster-head .group-name {
+  width: auto;
+  flex: 1;
+  min-width: 5em;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 650;
+  color: var(--ink);
+  text-align: left;
+}
+
+.roster-head .quiet { white-space: nowrap; }
+
+.roster-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.roster-row select { width: 7.5em; flex: none; }
+
+.roster-row label {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.roster-row label span { white-space: nowrap; }
+
+.roster-row .quiet { flex: none; }
+
+.roster-empty {
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#watch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+#watch-toolbar .note { margin: 0; }
+
+#watch-toolbar .primary { padding: 8px 16px; }
+
+.status.ok { color: var(--muted); }
+
+button.ghost,
+button.quiet {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+button.ghost {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  color: var(--ink);
+}
+
+button.ghost:hover,
+button.quiet:hover { color: var(--seal-deep); }
+
+button.ghost:hover { border-color: var(--seal); }
+
+button.ghost:disabled {
+  cursor: default;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.watch-card { margin-top: 16px; }
+
+.watch-card h2 {
+  font-size: 28px;
+  padding-right: 0;
+}
+
+.card-head { position: relative; padding-right: 64px; }
+
+.card-head .quiet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 0;
+}
+
+.watch-card .status { margin: 10px 0 0; min-height: 0; }
+
+.blocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.block {
+  padding: 12px;
+  background: rgba(255, 250, 243, 0.75);
+  border: 1px solid var(--line);
+}
+
+.block h3 {
+  margin: 0 0 8px;
+  color: var(--seal);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+}
+
+.block p { margin: 0; }
+
+.block .lead { margin-bottom: 4px; font-weight: 650; }
+
+.block .sub {
+  margin: 2px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.metric {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.metric span:first-child { color: var(--muted); }
+
+.metric span:last-child { font-variant-numeric: tabular-nums; }
+
+.fund-list,
+.survey-list {
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.fund-list li,
+.survey-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.fund-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fund-meta {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.survey-text {
+  flex: 1 0 100%;
+  color: var(--muted);
+}
+
+.block details.fund-more summary { margin-top: 0; font-size: 13px; }
+
+.midterm { margin-top: 12px; }
+.midterm .stack { display: block; margin: 0 0 8px; line-height: 1.6; }
+.midterm .stack b {
+  display: inline-block;
+  min-width: 4.5em;
+  color: var(--muted);
+  font-weight: 550;
 }
 
 .market { margin-top: 18px; }
@@ -326,9 +590,15 @@ details summary { margin-top: 8px; color: var(--muted); cursor: pointer; }
   .wrap { padding-top: 32px; }
   .brand h1 { font-size: 28px; }
   form { grid-template-columns: 1fr; }
+  #watch-form,
+  .group-form { grid-template-columns: 1fr; }
+  .roster-row { flex-wrap: wrap; }
+  .roster-row select { width: 100%; }
   button.primary { height: 44px; }
   dl { grid-template-columns: 1fr; }
   h2 { font-size: 30px; }
   .sheet { padding: 22px 16px 16px; }
   .seal { width: 54px; height: 54px; top: 18px; right: 16px; }
+  .blocks { grid-template-columns: 1fr; }
+  .card-head { padding-right: 52px; }
 }
