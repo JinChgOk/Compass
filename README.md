@@ -42,7 +42,7 @@ npm test
 
 自选卡片使用这些 Tushare 接口：
 
-- 业绩：`forecast`、`express`，缺的营收、归母净利、ROE 同比用 `fina_indicator`。同一报告期优先快报；更新的报告期仍显示预告里的净利变动区间。
+- 业绩：`forecast`、`express`，预告列出近 3 年各期的类型和净利同比区间。缺的营收、归母净利、ROE 同比用 `fina_indicator`。同一报告期优先快报；更新的报告期仍显示预告里的净利变动区间。
 - 资金：`moneyflow` 近 5 个交易日大单与特大单净额，`margin_detail` 的融资余额相对近 1 年的变化，近 7 个交易日的 `top_list` 或 `block_trade`。
 - 股东：`stk_holdernumber` 最新户数相对上一期，`fund_portfolio` 最近两期公募持仓只数和占流通比，并按持仓市值列出基金名称、占流通和占基金比，默认前 6 只，其余折叠。`fund_basic` 补基金简称。`stk_surv` 近一年机构调研次数，默认列出最近 6 次的机构和要点，其余折叠。
 - 位置：`daily` 近 20 个交易日涨跌幅，减去 `index_member_all` 给出的申万行业在 `index_daily` 里的同期涨跌幅。二级行业没有指数行情时，改用一级。

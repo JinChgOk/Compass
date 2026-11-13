@@ -1122,19 +1122,51 @@ function fillPerformance(body, performance) {
   body.replaceChildren();
   if (performance.error) appendError(body, performance.error);
   const preview = performance.preview;
-  if (preview) {
+  if (preview?.kind === "express") {
     const title = document.createElement("p");
     title.className = "lead";
-    const kind = preview.kind === "forecast" ? "业绩预告" : "业绩快报";
-    title.textContent = [preview.periodLabel || preview.period, kind, preview.type].filter(Boolean).join(" · ");
+    title.textContent = [preview.periodLabel || preview.period, "业绩快报"].filter(Boolean).join(" · ");
     body.append(title);
     if (preview.annDate) appendSub(body, `公告 ${preview.annDate}`);
     if (preview.summary) appendSub(body, preview.summary);
   }
+  fillForecasts(body, performance.forecasts || []);
   appendMetric(body, "营收同比", performance.revenueYoy);
   appendMetric(body, "净利同比", performance.profitYoy);
   appendMetric(body, "ROE同比", performance.roeYoy);
   if (performance.hint) appendSub(body, performance.hint);
+}
+
+function fillForecasts(body, forecasts) {
+  if (!forecasts.length) return;
+  const title = document.createElement("p");
+  title.className = "lead";
+  title.textContent = "近3年业绩预告";
+  body.append(title);
+  const list = document.createElement("ul");
+  list.className = "survey-list";
+  for (const item of forecasts) {
+    const row = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "fund-name";
+    name.textContent = [item.periodLabel || item.period, item.type].filter(Boolean).join(" · ");
+    row.append(name);
+    if (item.profit) {
+      const meta = document.createElement("span");
+      meta.className = `fund-meta ${yoyClass(item.profit)}`.trim();
+      meta.textContent = formatYoy(item.profit);
+      row.append(meta);
+    }
+    const note = [item.annDate ? `公告 ${item.annDate}` : "", item.summary].filter(Boolean).join(" · ");
+    if (note) {
+      const text = document.createElement("span");
+      text.className = "survey-text";
+      text.textContent = note;
+      row.append(text);
+    }
+    list.append(row);
+  }
+  body.append(list);
 }
 
 function fillCapital(body, capital) {

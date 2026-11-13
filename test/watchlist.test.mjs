@@ -44,6 +44,23 @@ test("prefers an express over the same period and a newer forecast for profit", 
   assert.equal(newerForecast.profitYoy.min, 30);
   assert.equal(newerForecast.profitYoy.max, 50);
   assert.equal(newerForecast.profitYoy.source, "预告");
+  assert.equal(newerForecast.forecasts.length, 1);
+  assert.equal(newerForecast.forecasts[0].periodLabel, "2025年报");
+  assert.equal(newerForecast.forecasts[0].profit.min, 30);
+  assert.equal(newerForecast.forecasts[0].profit.max, 50);
+  const threeYears = buildPerformance({
+    end: "20261106",
+    forecasts: [
+      { ann_date: "20260715", end_date: "20260630", type: "预增", p_change_min: 63.48, p_change_max: 101.7, summary: "中报预增" },
+      { ann_date: "20260120", end_date: "20251231", type: "预增", p_change_min: 20, p_change_max: 30, summary: "年报预增" },
+      { ann_date: "20240715", end_date: "20240630", type: "略增", p_change_min: 5, p_change_max: 8, summary: "更早中报" },
+      { ann_date: "20230715", end_date: "20230630", type: "预增", p_change_min: 10, p_change_max: 12, summary: "三年内中报" },
+      { ann_date: "20230120", end_date: "20221231", type: "预增", p_change_min: 1, p_change_max: 2, summary: "更早年报不该出现" },
+    ],
+  });
+  assert.equal(threeYears.forecasts.length, 4);
+  assert.equal(threeYears.forecasts[0].periodLabel, "2026中报");
+  assert.equal(threeYears.forecasts[3].periodLabel, "2023中报");
   assert.equal(newerForecast.revenueYoy.value, 12.5);
   assert.equal(newerForecast.revenueYoy.source, "快报");
   assert.equal(newerForecast.roeYoy.value, 1.5);
@@ -67,6 +84,7 @@ test("uses the revised financials when no forecast or express exists", () => {
   assert.equal(result.roeYoy.unit, "point");
   assert.deepEqual(buildPerformance(), {
     preview: null,
+    forecasts: [],
     revenueYoy: null,
     profitYoy: null,
     roeYoy: null,
@@ -380,6 +398,8 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.tsCode, "600519.SH");
   assert.equal(result.name, "贵州茅台");
   assert.equal(result.performance.preview.kind, "express");
+  assert.equal(result.performance.forecasts.length, 1);
+  assert.equal(result.performance.forecasts[0].periodLabel, "2025三季报");
   assert.equal(result.performance.preview.periodLabel, "2025三季报");
   assert.equal(result.performance.preview.annDate, "2025-10-28");
   assert.equal(result.performance.revenueYoy.value, 12.5);
@@ -448,6 +468,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(calls.find((call) => call.api_name === "index_daily").params.ts_code, "801125.SI");
   assert.equal(calls.find((call) => call.api_name === "index_member_all").params.is_new, "Y");
   assert.equal(calls.find((call) => call.api_name === "daily").params.end_date, end);
+  assert.equal(calls.find((call) => call.api_name === "forecast").params.start_date, shiftYmd(end, -1300));
   assert.equal(calls.find((call) => call.api_name === "margin_detail").params.start_date, shiftYmd(end, -370));
   assert.equal(JSON.stringify(result).includes("test-token"), false);
 });
@@ -582,11 +603,13 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /近 20 个交易日/);
     assert.match(html, /市值前 6/);
     assert.match(html, /最近 6 次/);
+    assert.match(html, /预告列出近 3 年/);
     const script = await (await fetch(`http://127.0.0.1:${port}/app.js`)).text();
     assert.match(script, /"业绩"/);
     assert.match(script, /"资金"/);
     assert.match(script, /"股东"/);
     assert.match(script, /"位置"/);
+    assert.match(script, /近3年业绩预告/);
     assert.match(script, /近1年融资余额变化/);
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
