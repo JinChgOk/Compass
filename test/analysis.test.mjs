@@ -6,6 +6,7 @@ import {
   buildCapitalSpan,
   buildDragon,
   buildLevels,
+  buildLimits,
   buildUnlock,
   buildValuation,
   judgeCheapness,
@@ -14,7 +15,7 @@ import {
 import { createServer } from "../server.mjs";
 import { shiftYmd } from "../lib/tushare.mjs";
 
-const BANNED = ["limit_list_d", "dc_member", "cyq_perf", "cyq_chips"];
+const BANNED = ["dc_member", "cyq_perf", "cyq_chips"];
 
 test("says a low PE is truly cheap only when profit and revenue agree", () => {
   const real = judgeCheapness({
@@ -163,6 +164,25 @@ test("sums medium-term flow and dragon-tiger appearances", () => {
   assert.equal(unlock.count, 2);
 });
 
+test("treats frequent limit-ups as thematic counter-evidence", () => {
+  const quiet = buildLimits([
+    { trade_date: "20260301", limit: "U", limit_times: 1 },
+    { trade_date: "20260408", limit: "Z", limit_times: 0 },
+    { trade_date: "20240101", limit: "U", limit_times: 4 },
+  ], { start: "20241107", end: "20261106" });
+  assert.equal(quiet.upCount, 1);
+  assert.equal(quiet.zhaCount, 1);
+  assert.equal(quiet.thematic, false);
+  const hot = buildLimits(Array.from({ length: 8 }, (_, index) => ({
+    trade_date: `2026${String(index + 1).padStart(2, "0")}01`,
+    limit: "U",
+    limit_times: index === 7 ? 3 : 1,
+  })));
+  assert.equal(hot.upCount, 8);
+  assert.equal(hot.maxStreak, 3);
+  assert.equal(hot.thematic, true);
+});
+
 test("grades a cheap stock with worsening earnings as a low-conviction bounce", () => {
   const result = assembleMidterm({
     price: { close: 10.8, drawdown: -40, rebound: 8, ma60: 14 },
@@ -181,6 +201,7 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
     dragon: { count: 2, net: 800000, reasons: ["日跌幅偏离值达到7%的前五只证券"], sessions: 60 },
     seats: { institution: 500000, hot: null },
     unlock: { ratio: 6, count: 2 },
+    limits: { upCount: 9, zhaCount: 2, maxStreak: 3, thematic: true },
     discount: false,
     valueStyle: "pe",
   });
@@ -196,6 +217,8 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
   assert.match(result.capital, /2025三季报公募 2 只持仓/);
   assert.match(result.capital, /近1年机构调研 2 次/);
   assert.match(result.counter, /解禁合计 6.0%/);
+  assert.match(result.counter, /近1年涨停 9 次/);
+  assert.match(result.counter, /更像题材票/);
   assert.match(result.value, /总市值 20.0 亿/);
 });
 
@@ -256,6 +279,15 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
     if (body.api_name === "stk_surv") {
       return table(["ts_code", "surv_date", "rece_org"], [["600519.SH", "20260301", "易方达"]]);
     }
+    if (body.api_name === "limit_list_d") {
+      return table(
+        ["ts_code", "trade_date", "limit", "limit_times"],
+        [
+          ["600519.SH", "20260301", "U", 1],
+          ["600519.SH", "20260408", "Z", 0],
+        ],
+      );
+    }
     return table(["ts_code"], []);
   };
 
@@ -276,6 +308,8 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
   assert.match(result.capital, /机构席位/);
   assert.match(result.levels, /支撑|压力/);
   assert.match(result.value, /市值|市盈率|市净率/);
+  assert.match(result.counter, /近1年涨停 1 次/);
+  assert.match(result.counter, /炸板 1 次/);
   assert.equal(calls.includes("weekly"), true);
   assert.equal(calls.includes("daily_basic"), true);
   assert.equal(calls.filter((name) => name === "top_list").length, 7);

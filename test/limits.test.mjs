@@ -135,6 +135,7 @@ test("reuses the dragon list when the card and the mid-term view open together",
   assert.equal(calls.filter((name) => name === "forecast").length, 1);
   assert.equal(calls.filter((name) => name === "fund_portfolio").length, 1);
   assert.equal(calls.filter((name) => name === "stk_surv").length, 1);
+  assert.equal(calls.filter((name) => name === "limit_list_d").length, 1);
 });
 
 test("counts outbound Tushare calls in a one-minute window", () => {
