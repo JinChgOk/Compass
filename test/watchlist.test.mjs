@@ -528,6 +528,9 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /"位置"/);
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
+    assert.match(html, /id="call-meter"/);
+    assert.match(script, /x-tushare-calls/);
+    assert.match(script, /近 1 分钟/);
   } finally {
     server.close();
   }

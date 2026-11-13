@@ -6,6 +6,7 @@ import { handleRequest } from "../lib/handle.mjs";
 import { loadAnalysis } from "../lib/analysis.mjs";
 import { loadWatchCard } from "../lib/watchlist.mjs";
 import { shiftYmd, tushareQuery } from "../lib/tushare.mjs";
+import { createCallMeter, resetCallMeter } from "../lib/usage.mjs";
 
 test("drops expired entries and keeps the cache under its limit", async () => {
   const cache = new Map();
@@ -134,6 +135,34 @@ test("reuses the dragon list when the card and the mid-term view open together",
   assert.equal(calls.filter((name) => name === "forecast").length, 1);
   assert.equal(calls.filter((name) => name === "fund_portfolio").length, 1);
   assert.equal(calls.filter((name) => name === "stk_surv").length, 1);
+});
+
+test("counts outbound Tushare calls in a one-minute window", () => {
+  let now = 1_000;
+  const meter = createCallMeter({ windowMs: 60_000, now: () => now });
+  meter.note();
+  meter.note();
+  assert.equal(meter.count(), 2);
+  now = 61_000;
+  meter.note();
+  assert.equal(meter.count(), 1);
+});
+
+test("puts the last-minute Tushare call count on paid responses", async () => {
+  resetCallMeter();
+  const fetchImpl = async () => ({
+    ok: true,
+    status: 200,
+    async json() { return { code: 0, data: { fields: ["ts_code"], items: [] } }; },
+  });
+  await tushareQuery({ token: "test-token", apiName: "daily", params: {}, fetchImpl });
+  await tushareQuery({ token: "test-token", apiName: "weekly", params: {}, fetchImpl });
+  const response = await handleRequest(new Request("http://127.0.0.1/api/watch?code=600519"), {
+    watch: async () => ({ configured: true, code: "600519" }),
+    guard: createPaidGuard({ cacheLimit: 0 }),
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-tushare-calls"), "2");
 });
 
 function table(fields, items) {

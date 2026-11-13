@@ -218,6 +218,13 @@ a { color: var(--seal-deep); }
   font-size: 12px;
 }
 
+.call-meter {
+  margin: 36px 0 0;
+  color: #c4b8a4;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
 .choices h2 { font-size: 24px; padding-right: 0; }
 
 .choices ul {

@@ -78,6 +78,19 @@ function setStatus(message) {
   statusNode.textContent = message;
 }
 
+async function paidFetch(url) {
+  const response = await fetch(url);
+  const raw = response.headers.get("x-tushare-calls");
+  if (raw == null || raw === "") return response;
+  const count = Number(raw);
+  if (!Number.isFinite(count)) return response;
+  const meter = document.querySelector("#call-meter");
+  if (!meter) return response;
+  meter.hidden = false;
+  meter.textContent = `近 1 分钟 ${count} 次`;
+  return response;
+}
+
 function hideResults() {
   marketRequest += 1;
   currentCompany = null;
@@ -319,7 +332,7 @@ async function loadMarket(company) {
     industry: company.industry || "",
   });
   try {
-    const response = await fetch(`/api/market?${params}`);
+    const response = await paidFetch(`/api/market?${params}`);
     const data = await response.json();
     if (requestId !== marketRequest) return;
     renderMarket(data);
@@ -814,7 +827,7 @@ async function refreshCard(entry) {
     securityType: entry.securityType || "",
   });
   try {
-    const response = await fetch(`/api/watch?${params}`);
+    const response = await paidFetch(`/api/watch?${params}`);
     const data = await response.json();
     if (watchRequests.get(entry.code) !== requestId) return;
     const current = document.querySelector(selector);
@@ -881,7 +894,7 @@ async function loadMidterm(entry, card) {
     securityType: entry.securityType || "",
   });
   try {
-    const response = await fetch(`/api/analysis?${params}`);
+    const response = await paidFetch(`/api/analysis?${params}`);
     const data = await response.json();
     if (!card.isConnected) return;
     fillAnalysis(body, response.ok ? data : { configured: true, error: data.message || "暂时无法生成中线分析" });
