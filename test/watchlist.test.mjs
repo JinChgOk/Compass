@@ -12,6 +12,7 @@ import {
   buildPerformance,
   buildPosition,
   buildSurveys,
+  extractSurveyHighlights,
   industryChoices,
   loadWatchCard,
   readWatchQuery,
@@ -129,14 +130,17 @@ test("counts public funds and surveys across two periods", () => {
   assert.equal(funds.previous.count, 3);
   assert.equal(funds.countChange, -1);
   const surveys = buildSurveys([
-    { surv_date: "20260301", rece_org: "易方达" },
-    { surv_date: "20260301", rece_org: "华夏" },
+    { surv_date: "20260301", rece_org: "易方达", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
+    { surv_date: "20260301", rece_org: "华夏", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
     { surv_date: "20251008", rece_org: "易方达" },
-    { surv_date: "20240101", rece_org: "过期" },
+    { surv_date: "20240101", rece_org: "过期", content: "过期内容不该出现" },
   ], { start: "20241107", end: "20261106" });
   assert.equal(surveys.count, 2);
   assert.equal(surveys.orgCount, 2);
   assert.equal(surveys.latestDate, "2026-03-01");
+  assert.equal(surveys.highlights[0].date, "2026-03-01");
+  assert.match(surveys.highlights[0].text, /毛利率|订单|产能/);
+  assert.deepEqual(extractSurveyHighlights("天气不错，会议室在三楼。"), ["天气不错，会议室在三楼。"]);
 });
 
 test("compares holder count with the previous period", () => {
@@ -305,12 +309,12 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     }
     if (body.api_name === "stk_surv") {
       assert.equal(body.params.ts_code, "600519.SH");
-      assert.equal(JSON.stringify(body).includes("content"), false);
+      assert.match(String(body.fields || ""), /content/);
       return table(
-        ["ts_code", "surv_date", "rece_org"],
+        ["ts_code", "surv_date", "rece_org", "content"],
         [
-          ["600519.SH", "20260301", "易方达"],
-          ["600519.SH", "20251120", "华夏"],
+          ["600519.SH", "20260301", "易方达", "问：需求如何？答：订单饱满，产能利用率回升。"],
+          ["600519.SH", "20251120", "华夏", ""],
         ],
       );
     }
@@ -359,6 +363,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.holders.funds.countChange, 1);
   assert.equal(result.holders.surveys.count, 2);
   assert.equal(result.holders.surveys.latestDate, "2026-03-01");
+  assert.match(result.holders.surveys.highlights[0].text, /订单|产能/);
   const stockBase = 100 + 4;
   const stockEnd = 100 + 24;
   const indexBase = 200 + 4;
@@ -531,6 +536,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /"位置"/);
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
+    assert.match(script, /highlights/);
     assert.match(html, /id="call-meter"/);
     assert.match(script, /x-tushare-calls/);
     assert.match(script, /近 1 分钟/);

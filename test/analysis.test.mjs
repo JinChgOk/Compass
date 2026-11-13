@@ -196,7 +196,7 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
       margin: "回升",
       holders: "股东户数下降",
       funds: { latest: { periodLabel: "2025三季报", count: 2, floatPct: 2 }, previous: { count: 3 }, countChange: -1 },
-      surveys: { count: 2, latestDate: "2026-03-01", orgCount: 2 },
+      surveys: { count: 2, latestDate: "2026-03-01", orgCount: 2, highlights: [{ date: "2026-03-01", text: "订单饱满，产能利用率回升" }] },
     },
     dragon: { count: 2, net: 800000, reasons: ["日跌幅偏离值达到7%的前五只证券"], sessions: 60 },
     seats: { institution: 500000, hot: null },
@@ -216,6 +216,7 @@ test("grades a cheap stock with worsening earnings as a low-conviction bounce", 
   assert.match(result.capital, /机构席位/);
   assert.match(result.capital, /2025三季报公募 2 只持仓/);
   assert.match(result.capital, /近1年机构调研 2 次/);
+  assert.match(result.capital, /订单饱满/);
   assert.match(result.counter, /解禁合计 6.0%/);
   assert.match(result.counter, /近1年涨停 9 次/);
   assert.match(result.counter, /更像题材票/);
@@ -277,7 +278,10 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
       );
     }
     if (body.api_name === "stk_surv") {
-      return table(["ts_code", "surv_date", "rece_org"], [["600519.SH", "20260301", "易方达"]]);
+      return table(
+        ["ts_code", "surv_date", "rece_org", "content"],
+        [["600519.SH", "20260301", "易方达", "答：毛利率回升，订单饱满。"]],
+      );
     }
     if (body.api_name === "limit_list_d") {
       return table(

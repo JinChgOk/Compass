@@ -1239,6 +1239,10 @@ function fillSurveys(body, surveys) {
     surveys.orgCount ? `${surveys.orgCount} 家机构` : "",
   ].filter(Boolean).join(" · ");
   if (meta) appendSub(body, meta);
+  for (const item of surveys.highlights || []) {
+    const who = [item.date, item.org].filter(Boolean).join(" ");
+    appendSub(body, who ? `${who}：${item.text}` : item.text);
+  }
 }
 
 function fillPosition(body, position) {
