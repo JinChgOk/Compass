@@ -517,7 +517,10 @@ test("serves the watch API and the card labels", async () => {
     const page = await fetch(`http://127.0.0.1:${port}/`);
     const html = await page.text();
     assert.match(html, /id="watch-form"/);
+    assert.match(html, /分析所选/);
+    assert.match(html, /新建分组/);
     assert.match(html, /加入自选/);
+    assert.match(html, /type="module"/);
     assert.match(html, /近 5 个交易日/);
     assert.match(html, /近 7 个交易日/);
     assert.match(html, /近 20 个交易日/);
@@ -531,6 +534,9 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /id="call-meter"/);
     assert.match(script, /x-tushare-calls/);
     assert.match(script, /近 1 分钟/);
+    assert.match(script, /roster\.mjs/);
+    const roster = await (await fetch(`http://127.0.0.1:${port}/roster.mjs`)).text();
+    assert.match(roster, /BATCH_LIMIT/);
   } finally {
     server.close();
   }

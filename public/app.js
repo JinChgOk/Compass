@@ -1,3 +1,19 @@
+import {
+  BATCH_LIMIT,
+  LEGACY_KEY,
+  STORE_KEY,
+  addEntry as addToStore,
+  addGroup as addGroupToStore,
+  moveEntry as moveInStore,
+  parseStore,
+  removeEntry as removeFromStore,
+  removeGroup as removeGroupFromStore,
+  renameGroup as renameGroupInStore,
+  selectGroup as selectGroupInStore,
+  selectedEntries,
+  toggleSelected,
+} from "./roster.mjs";
+
 const form = document.querySelector("#search-form");
 const input = document.querySelector("#q");
 const submitButton = form.querySelector("button[type='submit']");
@@ -25,19 +41,24 @@ const newsNode = document.querySelector("#sector-news");
 let marketRequest = 0;
 const watchForm = document.querySelector("#watch-form");
 const watchInput = document.querySelector("#watch-q");
+const watchGroup = document.querySelector("#watch-group");
 const watchSubmit = watchForm.querySelector("button[type='submit']");
+const groupForm = document.querySelector("#group-form");
+const groupNameInput = document.querySelector("#group-name");
 const watchStatus = document.querySelector("#watch-status");
 const watchChoices = document.querySelector("#watch-choices");
 const watchChoiceList = document.querySelector("#watch-choice-list");
+const watchRoster = document.querySelector("#watch-roster");
 const watchEmpty = document.querySelector("#watch-empty");
+const watchToolbar = document.querySelector("#watch-toolbar");
+const watchPickCount = document.querySelector("#watch-pick-count");
+const watchAnalyze = document.querySelector("#watch-analyze");
 const watchCards = document.querySelector("#watch-cards");
 const addWatchButton = document.querySelector("#add-watch");
 let currentCompany = null;
 const watchRequests = new Map();
 let watchQueue = Promise.resolve();
-const WATCH_LIMIT = 12;
-const WATCH_KEY = "compass.watchlist.v1";
-let memoryWatch = null;
+let memoryStore = null;
 
 const fields = {
   securityType: document.querySelector("#security-type"),
@@ -264,10 +285,78 @@ watchForm.addEventListener("submit", (event) => {
   addQuery(watchInput.value);
 });
 
+groupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const result = addGroupToStore(loadStore(), groupNameInput.value);
+  if (result.error) {
+    setWatchStatus(result.error);
+    return;
+  }
+  saveStore(result.store);
+  groupNameInput.value = "";
+  watchGroup.value = result.group.id;
+  renderRoster();
+  setWatchStatus(`已新建 ${result.group.name}`, true);
+});
+
 watchChoiceList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-code]");
   if (!button) return;
   addQuery(button.dataset.code);
+});
+
+watchRoster.addEventListener("change", (event) => {
+  const target = event.target;
+  if (target.dataset.code) {
+    const result = toggleSelected(loadStore(), target.dataset.code, target.checked);
+    saveStore(result.store);
+    renderRoster();
+    if (result.error) setWatchStatus(result.error);
+    return;
+  }
+  if (target.dataset.groupSelect) {
+    const result = selectGroupInStore(loadStore(), target.dataset.groupSelect, target.checked);
+    saveStore(result.store);
+    renderRoster();
+    if (result.error) setWatchStatus(result.error);
+    return;
+  }
+  if (target.dataset.move) {
+    saveStore(moveInStore(loadStore(), target.dataset.move, target.value));
+    renderRoster();
+    return;
+  }
+  if (target.dataset.renameGroup) {
+    const result = renameGroupInStore(loadStore(), target.dataset.renameGroup, target.value);
+    if (result.error) {
+      setWatchStatus(result.error);
+      renderRoster();
+      return;
+    }
+    saveStore(result.store);
+    renderRoster();
+  }
+});
+
+watchRoster.addEventListener("click", (event) => {
+  const removeStock = event.target.closest("button[data-remove]");
+  if (removeStock) {
+    removeEntry(removeStock.dataset.remove);
+    return;
+  }
+  const removeGroup = event.target.closest("button[data-remove-group]");
+  if (!removeGroup) return;
+  const result = removeGroupFromStore(loadStore(), removeGroup.dataset.removeGroup);
+  if (result.error) {
+    setWatchStatus(result.error);
+    return;
+  }
+  saveStore(result.store);
+  renderRoster();
+});
+
+watchAnalyze.addEventListener("click", () => {
+  analyzeSelected();
 });
 
 watchCards.addEventListener("click", (event) => {
@@ -281,7 +370,8 @@ addWatchButton.addEventListener("click", () => {
   addEntry(currentCompany);
 });
 
-renderSavedCards();
+renderRoster();
+if (loadStore().selected.length) analyzeSelected();
 
 function formatPrice(value) {
   if (value == null || Number.isNaN(Number(value))) return "—";
@@ -583,35 +673,28 @@ function localCode(input) {
   return match ? match[1] : "";
 }
 
-function sanitizeEntry(item) {
-  const code = String(item?.code ?? "");
-  if (!/^\d{6}$/.test(code)) return null;
-  return {
-    code,
-    name: String(item?.name ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 30),
-    securityType: String(item?.securityType ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 40),
-  };
+function loadStore() {
+  if (memoryStore) return cloneStore(memoryStore);
+  let rawV2 = null;
+  let rawV1 = null;
+  try { rawV2 = localStorage.getItem(STORE_KEY); } catch { rawV2 = null; }
+  try { rawV1 = localStorage.getItem(LEGACY_KEY); } catch { rawV1 = null; }
+  memoryStore = parseStore(rawV2, rawV1);
+  return cloneStore(memoryStore);
 }
 
-function readWatch() {
-  if (memoryWatch) return memoryWatch.map((item) => ({ ...item }));
+function saveStore(next) {
+  memoryStore = parseStore(next, null);
   try {
-    const parsed = JSON.parse(localStorage.getItem(WATCH_KEY) || "[]");
-    memoryWatch = Array.isArray(parsed) ? parsed.map(sanitizeEntry).filter(Boolean).slice(0, WATCH_LIMIT) : [];
-  } catch {
-    memoryWatch = [];
-  }
-  return memoryWatch.map((item) => ({ ...item }));
-}
-
-function writeWatch(entries) {
-  memoryWatch = entries.map(sanitizeEntry).filter(Boolean).slice(0, WATCH_LIMIT);
-  try {
-    localStorage.setItem(WATCH_KEY, JSON.stringify(memoryWatch));
+    localStorage.setItem(STORE_KEY, JSON.stringify(memoryStore));
   } catch {
     // 隐私模式写不进本地存储时，这次打开仍然保留列表。
   }
-  return memoryWatch.map((item) => ({ ...item }));
+  return cloneStore(memoryStore);
+}
+
+function cloneStore(store) {
+  return parseStore(store, null);
 }
 
 function syncAddButton() {
@@ -620,13 +703,9 @@ function syncAddButton() {
     return;
   }
   addWatchButton.hidden = false;
-  const saved = readWatch().some((item) => item.code === currentCompany.code);
+  const saved = loadStore().entries.some((item) => item.code === currentCompany.code);
   addWatchButton.disabled = saved;
   addWatchButton.textContent = saved ? "已在自选" : "加入自选";
-}
-
-function toggleEmpty() {
-  watchEmpty.hidden = readWatch().length > 0;
 }
 
 function hideWatchChoices() {
@@ -694,60 +773,153 @@ async function addQuery(raw) {
 }
 
 function addEntry(company) {
-  const entry = sanitizeEntry({
+  const result = addToStore(loadStore(), {
     code: company.code,
     name: company.name || company.code,
     securityType: company.securityType || "",
-  });
-  if (!entry) return;
-  const entries = readWatch();
-  if (entries.some((item) => item.code === entry.code)) {
-    setWatchStatus(`${entry.name} 已在自选`, true);
-    document.querySelector(`[data-card="${CSS.escape(entry.code)}"]`)?.scrollIntoView({ block: "nearest" });
-    syncAddButton();
-    watchInput.value = "";
-    hideWatchChoices();
+  }, watchGroup.value);
+  if (result.error && !result.store.entries.some((item) => item.code === company.code)) {
+    setWatchStatus(result.error);
     return;
   }
-  if (entries.length >= WATCH_LIMIT) {
-    setWatchStatus(`自选最多 ${WATCH_LIMIT} 只，请先移除一只`);
-    return;
-  }
-  writeWatch([entry, ...entries]);
-  setWatchStatus(`已加入 ${entry.name}`, true);
+  saveStore(result.store);
+  const entry = result.store.entries.find((item) => item.code === company.code);
+  const name = entry?.name || company.name || company.code;
+  if (result.error) setWatchStatus(result.error, true);
+  else setWatchStatus(`已加入 ${name}，勾选后点「分析所选」`, true);
   watchInput.value = "";
   hideWatchChoices();
-  upsertCard(entry);
+  renderRoster();
   syncAddButton();
 }
 
 function removeEntry(code) {
-  writeWatch(readWatch().filter((item) => item.code !== code));
+  saveStore(removeFromStore(loadStore(), code));
   watchRequests.set(code, (watchRequests.get(code) ?? 0) + 1);
   document.querySelector(`[data-card="${CSS.escape(code)}"]`)?.remove();
-  toggleEmpty();
+  renderRoster();
   syncAddButton();
 }
 
-function renderSavedCards() {
-  watchCards.replaceChildren();
-  for (const entry of readWatch()) watchCards.append(createCard(entry));
-  toggleEmpty();
-  for (const entry of readWatch()) enqueueRefresh(entry);
-}
-
-function upsertCard(entry) {
-  const selector = `[data-card="${CSS.escape(entry.code)}"]`;
-  const existing = document.querySelector(selector);
-  if (existing) {
-    existing.scrollIntoView({ block: "nearest" });
+function renderRoster() {
+  const store = loadStore();
+  fillGroupSelect(store);
+  watchRoster.replaceChildren();
+  if (store.entries.length === 0 && store.groups.length <= 1) {
+    watchRoster.hidden = true;
+    watchToolbar.hidden = true;
+    watchEmpty.hidden = false;
     return;
   }
-  const card = createCard(entry);
-  watchCards.prepend(card);
-  toggleEmpty();
-  enqueueRefresh(entry);
-  card.scrollIntoView({ block: "nearest" });
+  watchEmpty.hidden = true;
+  watchRoster.hidden = false;
+  watchToolbar.hidden = store.entries.length === 0;
+  for (const group of store.groups) {
+    const members = store.entries.filter((item) => item.groupId === group.id);
+    watchRoster.append(renderGroup(store, group, members));
+  }
+  updatePickCount(store);
+}
+
+function fillGroupSelect(store) {
+  const current = watchGroup.value;
+  watchGroup.replaceChildren();
+  for (const group of store.groups) {
+    const option = document.createElement("option");
+    option.value = group.id;
+    option.textContent = group.name;
+    watchGroup.append(option);
+  }
+  if ([...watchGroup.options].some((option) => option.value === current)) watchGroup.value = current;
+}
+
+function renderGroup(store, group, members) {
+  const section = document.createElement("section");
+  section.className = "roster-group";
+  const head = document.createElement("div");
+  head.className = "roster-head";
+  const pick = document.createElement("input");
+  pick.type = "checkbox";
+  pick.dataset.groupSelect = group.id;
+  const selectedCount = members.filter((item) => store.selected.includes(item.code)).length;
+  pick.checked = members.length > 0 && selectedCount === members.length;
+  pick.indeterminate = selectedCount > 0 && selectedCount < members.length;
+  pick.disabled = members.length === 0;
+  pick.setAttribute("aria-label", `全选 ${group.name}`);
+  const name = document.createElement("input");
+  name.className = "group-name";
+  name.value = group.name;
+  name.maxLength = 12;
+  name.dataset.renameGroup = group.id;
+  name.setAttribute("aria-label", "分组名称");
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "quiet";
+  remove.dataset.removeGroup = group.id;
+  remove.textContent = "删除分组";
+  remove.hidden = store.groups.length < 2;
+  head.append(pick, name, remove);
+  const list = document.createElement("ul");
+  list.className = "roster-list";
+  if (members.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "roster-empty";
+    empty.textContent = "这组还是空的。";
+    list.append(empty);
+  }
+  for (const entry of members) list.append(renderRosterRow(store, entry));
+  section.append(head, list);
+  return section;
+}
+
+function renderRosterRow(store, entry) {
+  const row = document.createElement("li");
+  row.className = "roster-row";
+  const label = document.createElement("label");
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.dataset.code = entry.code;
+  box.checked = store.selected.includes(entry.code);
+  const text = document.createElement("span");
+  text.textContent = `${entry.code}  ${entry.name || entry.code}`;
+  label.append(box, text);
+  const move = document.createElement("select");
+  move.dataset.move = entry.code;
+  move.setAttribute("aria-label", `把 ${entry.name || entry.code} 移到分组`);
+  for (const group of store.groups) {
+    const option = document.createElement("option");
+    option.value = group.id;
+    option.textContent = group.name;
+    if (group.id === entry.groupId) option.selected = true;
+    move.append(option);
+  }
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "quiet";
+  remove.dataset.remove = entry.code;
+  remove.textContent = "移除";
+  row.append(label, move, remove);
+  return row;
+}
+
+function updatePickCount(store) {
+  const count = store.selected.length;
+  watchPickCount.textContent = count
+    ? `已勾选 ${count} 只，同时最多分析 ${BATCH_LIMIT} 只。`
+    : `勾选要看的公司，同时最多 ${BATCH_LIMIT} 只。`;
+  watchAnalyze.disabled = count === 0;
+}
+
+function analyzeSelected() {
+  const picked = selectedEntries(loadStore());
+  if (!picked.length) {
+    setWatchStatus("请先勾选要分析的公司");
+    return;
+  }
+  watchCards.replaceChildren();
+  for (const entry of picked) watchCards.append(createCard(entry));
+  for (const entry of picked) enqueueRefresh(entry);
+  setWatchStatus(`正在分析已勾选的 ${picked.length} 只…`, true);
 }
 
 function enqueueRefresh(entry) {
@@ -932,12 +1104,16 @@ function fillAnalysis(body, data) {
 }
 
 function rememberName(code, reported) {
-  const entries = readWatch();
-  const entry = entries.find((item) => item.code === code);
+  const store = loadStore();
+  const entry = store.entries.find((item) => item.code === code);
   const current = entry?.name || "";
   const better = reported && (current === code || !current) ? reported : (current || reported || code);
   if (entry && better !== current) {
-    writeWatch(entries.map((item) => (item.code === code ? { ...item, name: better } : item)));
+    saveStore({
+      ...store,
+      entries: store.entries.map((item) => (item.code === code ? { ...item, name: better } : item)),
+    });
+    renderRoster();
   }
   return better || code;
 }

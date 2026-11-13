@@ -77,6 +77,13 @@ input {
   outline: none;
 }
 
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+
 button.primary {
   min-width: 96px;
   border: 0;
@@ -283,7 +290,108 @@ input:focus-visible {
 .watchlist form,
 #search-form { margin-top: 12px; }
 
+#watch-form {
+  grid-template-columns: 1fr minmax(7em, auto) auto;
+}
+
+.group-form {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  grid-template-columns: 1fr auto;
+}
+
+.group-form input { padding: 8px 10px; }
+
+select {
+  font: inherit;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 8px 6px;
+}
+
 #watch-empty { margin: 14px 0 0; }
+
+#watch-roster { margin-top: 16px; display: grid; gap: 14px; }
+
+.roster-group {
+  padding: 10px 12px 6px;
+  background: #fffaf3;
+  border: 1px solid var(--line);
+}
+
+.roster-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.roster-head .group-name {
+  width: auto;
+  flex: 1;
+  min-width: 5em;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 650;
+  color: var(--ink);
+  text-align: left;
+}
+
+.roster-head .quiet { white-space: nowrap; }
+
+.roster-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.roster-row select { width: 7.5em; flex: none; }
+
+.roster-row label {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.roster-row label span { white-space: nowrap; }
+
+.roster-row .quiet { flex: none; }
+
+.roster-empty {
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#watch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+#watch-toolbar .note { margin: 0; }
+
+#watch-toolbar .primary { padding: 8px 16px; }
 
 .status.ok { color: var(--muted); }
 
@@ -443,6 +551,10 @@ details summary { margin-top: 8px; color: var(--muted); cursor: pointer; }
   .wrap { padding-top: 32px; }
   .brand h1 { font-size: 28px; }
   form { grid-template-columns: 1fr; }
+  #watch-form,
+  .group-form { grid-template-columns: 1fr; }
+  .roster-row { flex-wrap: wrap; }
+  .roster-row select { width: 100%; }
   button.primary { height: 44px; }
   dl { grid-template-columns: 1fr; }
   h2 { font-size: 30px; }
