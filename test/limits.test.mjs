@@ -121,6 +121,9 @@ test("reuses the dragon list when the card and the mid-term view open together",
     if (body.api_name === "daily") {
       return table(["trade_date", "close"], dates.map((tradeDate, index) => [tradeDate, 10 + index]));
     }
+    if (body.api_name === "fund_basic") {
+      return table(["ts_code", "name"], [["001001.OF", "易方达"]]);
+    }
     return table(["trade_date", "ts_code"], []);
   };
   const query = { code: "600519", name: "贵州茅台", securityType: "上交所主板A股" };
@@ -134,6 +137,7 @@ test("reuses the dragon list when the card and the mid-term view open together",
   assert.equal(calls.filter((name) => name === "moneyflow").length, 1);
   assert.equal(calls.filter((name) => name === "forecast").length, 1);
   assert.equal(calls.filter((name) => name === "fund_portfolio").length, 1);
+  assert.equal(calls.filter((name) => name === "fund_basic").length, 2);
   assert.equal(calls.filter((name) => name === "stk_surv").length, 1);
   assert.equal(calls.filter((name) => name === "limit_list_d").length, 1);
 });

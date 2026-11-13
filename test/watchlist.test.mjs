@@ -8,6 +8,7 @@ import { shiftYmd } from "../lib/tushare.mjs";
 import {
   buildCapital,
   buildFunds,
+  FUND_VISIBLE,
   buildHolders,
   buildPerformance,
   buildPosition,
@@ -118,17 +119,31 @@ test("sums main-force flow, margin balance, dragon-tiger and block trades", () =
 
 test("counts public funds and surveys across two periods", () => {
   const funds = buildFunds([
-    { ts_code: "001001.OF", end_date: "20250930", ann_date: "20251025", symbol: "600519.SH", stk_float_ratio: 1.2 },
-    { ts_code: "001002.OF", end_date: "20250930", ann_date: "20251026", symbol: "600519.SH", stk_float_ratio: 0.8 },
+    { ts_code: "001001.OF", end_date: "20250930", ann_date: "20251025", symbol: "600519.SH", mkv: 80_000_000, stk_float_ratio: 1.2, stk_mkv_ratio: 8.2 },
+    { ts_code: "001002.OF", end_date: "20250930", ann_date: "20251026", symbol: "600519.SH", mkv: 20_000_000, stk_float_ratio: 0.8, stk_mkv_ratio: 3.1 },
     { ts_code: "001001.OF", end_date: "20250630", ann_date: "20250720", symbol: "600519.SH", stk_float_ratio: 2 },
     { ts_code: "001002.OF", end_date: "20250630", ann_date: "20250721", symbol: "600519.SH", stk_float_ratio: 1 },
     { ts_code: "001003.OF", end_date: "20250630", ann_date: "20250721", symbol: "600519.SH", stk_float_ratio: 0.5 },
-  ]);
+  ], { "001001.OF": "易方达蓝筹", "001002.OF": "华夏成长" });
   assert.equal(funds.latest.count, 2);
   assert.equal(funds.latest.periodLabel, "2025三季报");
   assert.equal(funds.latest.floatPct, 2);
   assert.equal(funds.previous.count, 3);
   assert.equal(funds.countChange, -1);
+  assert.equal(funds.visibleCount, FUND_VISIBLE);
+  assert.equal(funds.latest.holdings[0].name, "易方达蓝筹");
+  assert.equal(funds.latest.holdings[0].mkvYuan, 80_000_000);
+  assert.equal(funds.latest.holdings[0].fundPct, 8.2);
+  assert.equal(funds.latest.holdings[1].name, "华夏成长");
+  const many = buildFunds(Array.from({ length: 8 }, (_, index) => ({
+    ts_code: `00${1001 + index}.OF`,
+    end_date: "20250930",
+    mkv: (8 - index) * 1_000_000,
+    stk_float_ratio: 0.1 * (index + 1),
+  })));
+  assert.equal(many.latest.holdings.length, 8);
+  assert.equal(many.latest.holdings[0].code, "001001.OF");
+  assert.equal(many.latest.holdings.slice(FUND_VISIBLE).length, 2);
   const surveys = buildSurveys([
     { surv_date: "20260301", rece_org: "易方达", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
     { surv_date: "20260301", rece_org: "华夏", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
@@ -299,11 +314,20 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     if (body.api_name === "fund_portfolio") {
       assert.equal(body.params.symbol, "600519.SH");
       return table(
-        ["ts_code", "ann_date", "end_date", "symbol", "stk_float_ratio"],
+        ["ts_code", "ann_date", "end_date", "symbol", "mkv", "stk_float_ratio", "stk_mkv_ratio"],
         [
-          ["001001.OF", "20251025", "20250930", "600519.SH", 1.5],
-          ["001002.OF", "20251026", "20250930", "600519.SH", 0.5],
-          ["001001.OF", "20250720", "20250630", "600519.SH", 2],
+          ["001001.OF", "20251025", "20250930", "600519.SH", 800000000, 1.5, 8.2],
+          ["001002.OF", "20251026", "20250930", "600519.SH", 200000000, 0.5, 3.1],
+          ["001001.OF", "20250720", "20250630", "600519.SH", 900000000, 2, 9],
+        ],
+      );
+    }
+    if (body.api_name === "fund_basic") {
+      return table(
+        ["ts_code", "name"],
+        [
+          ["001001.OF", "易方达蓝筹"],
+          ["001002.OF", "华夏成长"],
         ],
       );
     }
@@ -361,6 +385,9 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.holders.funds.latest.count, 2);
   assert.equal(result.holders.funds.latest.floatPct, 2);
   assert.equal(result.holders.funds.countChange, 1);
+  assert.equal(result.holders.funds.latest.holdings[0].name, "易方达蓝筹");
+  assert.equal(result.holders.funds.latest.holdings[0].mkvYuan, 800000000);
+  assert.equal(result.holders.funds.latest.holdings[0].fundPct, 8.2);
   assert.equal(result.holders.surveys.count, 2);
   assert.equal(result.holders.surveys.latestDate, "2026-03-01");
   assert.match(result.holders.surveys.highlights[0].text, /订单|产能/);
@@ -385,6 +412,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
     "express",
     "fina_indicator",
     "forecast",
+    "fund_basic",
     "fund_portfolio",
     "index_daily",
     "index_member_all",
@@ -529,6 +557,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /近 5 个交易日/);
     assert.match(html, /近 7 个交易日/);
     assert.match(html, /近 20 个交易日/);
+    assert.match(html, /市值前 6/);
     const script = await (await fetch(`http://127.0.0.1:${port}/app.js`)).text();
     assert.match(script, /"业绩"/);
     assert.match(script, /"资金"/);
@@ -537,6 +566,8 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
     assert.match(script, /highlights/);
+    assert.match(script, /fund-list/);
+    assert.match(script, /其余/);
     assert.match(html, /id="call-meter"/);
     assert.match(script, /x-tushare-calls/);
     assert.match(script, /近 1 分钟/);

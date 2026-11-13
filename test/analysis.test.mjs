@@ -270,12 +270,15 @@ test("loads the mid-term view for 600519 from the allowed interfaces", async () 
     }
     if (body.api_name === "fund_portfolio") {
       return table(
-        ["ts_code", "ann_date", "end_date", "symbol", "stk_float_ratio"],
+        ["ts_code", "ann_date", "end_date", "symbol", "mkv", "stk_float_ratio", "stk_mkv_ratio"],
         [
-          ["001001.OF", "20251025", "20250930", "600519.SH", 1.5],
-          ["001002.OF", "20250720", "20250630", "600519.SH", 2],
+          ["001001.OF", "20251025", "20250930", "600519.SH", 800000000, 1.5, 8.2],
+          ["001002.OF", "20250720", "20250630", "600519.SH", 900000000, 2, 9],
         ],
       );
+    }
+    if (body.api_name === "fund_basic") {
+      return table(["ts_code", "name"], [["001001.OF", "易方达蓝筹"]]);
     }
     if (body.api_name === "stk_surv") {
       return table(

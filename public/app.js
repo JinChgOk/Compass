@@ -1224,7 +1224,47 @@ function fillFunds(body, funds) {
     funds.previous?.periodLabel ? `上一期 ${funds.previous.periodLabel}` : "",
   ].filter(Boolean).join(" · ");
   if (meta) appendSub(body, meta);
+  fillFundHoldings(body, funds.latest.holdings || [], funds.visibleCount || 6);
   if (funds.hint) appendSub(body, funds.hint);
+}
+
+function fillFundHoldings(body, holdings, visibleCount) {
+  if (!holdings.length) return;
+  const shown = holdings.slice(0, visibleCount);
+  const rest = holdings.slice(visibleCount);
+  body.append(fundHoldingList(shown));
+  if (!rest.length) return;
+  const extra = document.createElement("details");
+  extra.className = "fund-more";
+  const summary = document.createElement("summary");
+  summary.textContent = `其余 ${rest.length} 只`;
+  extra.append(summary, fundHoldingList(rest));
+  body.append(extra);
+}
+
+function fundHoldingList(holdings) {
+  const list = document.createElement("ul");
+  list.className = "fund-list";
+  for (const item of holdings) {
+    const row = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "fund-name";
+    name.textContent = item.name || item.code || "—";
+    const meta = document.createElement("span");
+    meta.className = "fund-meta";
+    meta.textContent = fundHoldingMeta(item);
+    row.append(name, meta);
+    list.append(row);
+  }
+  return list;
+}
+
+function fundHoldingMeta(item) {
+  return [
+    item.floatPct != null ? `占流通 ${item.floatPct.toFixed(2)}%` : "",
+    item.fundPct != null ? `占基金 ${item.fundPct.toFixed(2)}%` : "",
+    item.mkvYuan != null ? formatYuan(item.mkvYuan) : "",
+  ].filter(Boolean).join(" · ");
 }
 
 function fillSurveys(body, surveys) {
