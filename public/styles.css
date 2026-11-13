@@ -482,7 +482,8 @@ button.ghost:disabled {
 
 .metric span:last-child { font-variant-numeric: tabular-nums; }
 
-.fund-list {
+.fund-list,
+.survey-list {
   margin: 4px 0 8px;
   padding: 0;
   list-style: none;
@@ -490,7 +491,8 @@ button.ghost:disabled {
   gap: 4px;
 }
 
-.fund-list li {
+.fund-list li,
+.survey-list li {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 12px;
@@ -510,6 +512,11 @@ button.ghost:disabled {
   flex: none;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.survey-text {
+  flex: 1 0 100%;
+  color: var(--muted);
 }
 
 .block details.fund-more summary { margin-top: 0; font-size: 13px; }

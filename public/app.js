@@ -1224,21 +1224,21 @@ function fillFunds(body, funds) {
     funds.previous?.periodLabel ? `上一期 ${funds.previous.periodLabel}` : "",
   ].filter(Boolean).join(" · ");
   if (meta) appendSub(body, meta);
-  fillFundHoldings(body, funds.latest.holdings || [], funds.visibleCount || 6);
+  appendFolded(body, funds.latest.holdings || [], funds.visibleCount || 6, "只", fundHoldingList);
   if (funds.hint) appendSub(body, funds.hint);
 }
 
-function fillFundHoldings(body, holdings, visibleCount) {
-  if (!holdings.length) return;
-  const shown = holdings.slice(0, visibleCount);
-  const rest = holdings.slice(visibleCount);
-  body.append(fundHoldingList(shown));
+function appendFolded(body, items, visibleCount, unit, renderList) {
+  if (!items.length) return;
+  const shown = items.slice(0, visibleCount);
+  const rest = items.slice(visibleCount);
+  body.append(renderList(shown));
   if (!rest.length) return;
   const extra = document.createElement("details");
   extra.className = "fund-more";
   const summary = document.createElement("summary");
-  summary.textContent = `其余 ${rest.length} 只`;
-  extra.append(summary, fundHoldingList(rest));
+  summary.textContent = `其余 ${rest.length} ${unit}`;
+  extra.append(summary, renderList(rest));
   body.append(extra);
 }
 
@@ -1279,10 +1279,31 @@ function fillSurveys(body, surveys) {
     surveys.orgCount ? `${surveys.orgCount} 家机构` : "",
   ].filter(Boolean).join(" · ");
   if (meta) appendSub(body, meta);
-  for (const item of surveys.highlights || []) {
-    const who = [item.date, item.org].filter(Boolean).join(" ");
-    appendSub(body, who ? `${who}：${item.text}` : item.text);
+  appendFolded(body, surveys.records || [], surveys.visibleCount || 6, "次", surveyRecordList);
+}
+
+function surveyRecordList(records) {
+  const list = document.createElement("ul");
+  list.className = "survey-list";
+  for (const item of records) {
+    const row = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "fund-name";
+    name.textContent = [item.date, item.org].filter(Boolean).join(" ");
+    const meta = document.createElement("span");
+    meta.className = "fund-meta";
+    meta.textContent = item.mode || "";
+    row.append(name);
+    if (item.mode) row.append(meta);
+    if (item.text) {
+      const text = document.createElement("span");
+      text.className = "survey-text";
+      text.textContent = item.text;
+      row.append(text);
+    }
+    list.append(row);
   }
+  return list;
 }
 
 function fillPosition(body, position) {

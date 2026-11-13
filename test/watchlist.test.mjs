@@ -9,6 +9,7 @@ import {
   buildCapital,
   buildFunds,
   FUND_VISIBLE,
+  SURVEY_VISIBLE,
   buildHolders,
   buildPerformance,
   buildPosition,
@@ -145,16 +146,31 @@ test("counts public funds and surveys across two periods", () => {
   assert.equal(many.latest.holdings[0].code, "001001.OF");
   assert.equal(many.latest.holdings.slice(FUND_VISIBLE).length, 2);
   const surveys = buildSurveys([
-    { surv_date: "20260301", rece_org: "易方达", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
-    { surv_date: "20260301", rece_org: "华夏", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
+    { surv_date: "20260301", rece_org: "易方达", rece_mode: "特定对象调研", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
+    { surv_date: "20260301", rece_org: "华夏", rece_mode: "特定对象调研", content: "问：今年净利怎么样？答：毛利率回升，订单饱满，产能利用率提高。" },
     { surv_date: "20251008", rece_org: "易方达" },
     { surv_date: "20240101", rece_org: "过期", content: "过期内容不该出现" },
   ], { start: "20241107", end: "20261106" });
   assert.equal(surveys.count, 2);
   assert.equal(surveys.orgCount, 2);
   assert.equal(surveys.latestDate, "2026-03-01");
+  assert.equal(surveys.visibleCount, SURVEY_VISIBLE);
+  assert.equal(surveys.records[0].date, "2026-03-01");
+  assert.match(surveys.records[0].org, /易方达/);
+  assert.match(surveys.records[0].org, /华夏/);
+  assert.equal(surveys.records[0].mode, "特定对象调研");
+  assert.match(surveys.records[0].text, /毛利率|订单|产能/);
   assert.equal(surveys.highlights[0].date, "2026-03-01");
   assert.match(surveys.highlights[0].text, /毛利率|订单|产能/);
+  const manySurveys = buildSurveys(Array.from({ length: 8 }, (_, index) => ({
+    surv_date: `20260${8 - index}01`,
+    rece_org: `机构${index + 1}`,
+    rece_mode: "电话会议",
+    content: `答：订单饱满，这是第 ${index + 1} 次。`,
+  })), { start: "20241107", end: "20261106" });
+  assert.equal(manySurveys.records.length, 8);
+  assert.equal(manySurveys.records[0].date, "2026-08-01");
+  assert.equal(manySurveys.records.slice(SURVEY_VISIBLE).length, 2);
   assert.deepEqual(extractSurveyHighlights("天气不错，会议室在三楼。"), ["天气不错，会议室在三楼。"]);
 });
 
@@ -390,6 +406,7 @@ test("builds the 600519 card from the 2000-point interfaces", async () => {
   assert.equal(result.holders.funds.latest.holdings[0].fundPct, 8.2);
   assert.equal(result.holders.surveys.count, 2);
   assert.equal(result.holders.surveys.latestDate, "2026-03-01");
+  assert.equal(result.holders.surveys.records[0].date, "2026-03-01");
   assert.match(result.holders.surveys.highlights[0].text, /订单|产能/);
   const stockBase = 100 + 4;
   const stockEnd = 100 + 24;
@@ -558,6 +575,7 @@ test("serves the watch API and the card labels", async () => {
     assert.match(html, /近 7 个交易日/);
     assert.match(html, /近 20 个交易日/);
     assert.match(html, /市值前 6/);
+    assert.match(html, /最近 6 次/);
     const script = await (await fetch(`http://127.0.0.1:${port}/app.js`)).text();
     assert.match(script, /"业绩"/);
     assert.match(script, /"资金"/);
@@ -565,8 +583,9 @@ test("serves the watch API and the card labels", async () => {
     assert.match(script, /"位置"/);
     assert.match(script, /公募持仓/);
     assert.match(script, /机构调研/);
-    assert.match(script, /highlights/);
+    assert.match(script, /surveys\.records/);
     assert.match(script, /fund-list/);
+    assert.match(script, /survey-list/);
     assert.match(script, /其余/);
     assert.match(html, /id="call-meter"/);
     assert.match(script, /x-tushare-calls/);
